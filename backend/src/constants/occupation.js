@@ -1,0 +1,25 @@
+const OCCUPATION = Object.freeze({
+  PRIVATE_SECTOR: 'private_sector',
+  GOVERNMENT: 'government',
+  BUSINESS: 'business',
+  SELF_EMPLOYED: 'self_employed',
+  DOCTOR: 'doctor',
+  ENGINEER: 'engineer',
+  LAWYER: 'lawyer',
+  TEACHER: 'teacher',
+  ARMY: 'army',
+  NAVY: 'navy',
+  AIR_FORCE: 'air_force',
+  POLICE: 'police',
+  IT_PROFESSIONAL: 'it_professional',
+  CHARTERED_ACCOUNTANT: 'chartered_accountant',
+  ARCHITECT: 'architect',
+  SCIENTIST: 'scientist',
+  RETIRED: 'retired',
+  HOMEMAKER: 'homemaker',
+  STUDENT: 'student',
+  NOT_WORKING: 'not_working',
+  OTHER: 'other',
+});
+
+module.exports = { OCCUPATION };
