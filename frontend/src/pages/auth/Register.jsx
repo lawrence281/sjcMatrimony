@@ -63,14 +63,14 @@ const Register = () => {
 
   return (
     <div className="w-full">
-      <div className="text-center mb-6">
-        <h2 className="text-2xl font-bold font-heading text-neutral-900 mb-1.5">Create Account</h2>
-        <p className="text-neutral-500 text-sm">Join us and start matching today</p>
+      <div className="text-center mb-10">
+        <h2 className="text-3xl font-bold font-heading text-slate-900 mb-2 tracking-tight">Create Account</h2>
+        <p className="text-slate-500 text-sm">Join us and start matching today</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+      <form onSubmit={handleSubmit} className="space-y-5" noValidate>
         {errors.form && (
-          <div className="p-3.5 bg-danger-light border border-danger text-danger-dark rounded-xl text-xs font-medium" role="alert">
+          <div className="p-4 bg-danger-light border border-danger/20 text-danger-dark rounded-xl text-xs font-medium" role="alert">
             {errors.form}
           </div>
         )}

@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react';
 import InterestAPI from '@/api/interestAPI';
+import Icon from '@/components/common/Icon/Icon';
+import { Link } from 'react-router-dom';
+import { ROUTES } from '@/constants/routes';
 
 const Interests = () => {
   const [activeTab, setActiveTab] = useState('received'); // received | sent
@@ -18,7 +21,7 @@ const Interests = () => {
       }
       setItems(res.data?.data || []);
     } catch (err) {
-      // Handle error
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -59,36 +62,32 @@ const Interests = () => {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="page-header">
-        <h1 className="page-title text-2xl font-bold font-heading text-neutral-800">Connection Requests 🤝</h1>
-        <p className="page-subtitle text-neutral-400 text-sm">Manage connection invitations sent and received.</p>
+    <div className="space-y-8 animate-fade-in pb-12">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <h1 className="text-3xl md:text-4xl font-bold font-serif text-slate-900 tracking-tight">Connections</h1>
+          <p className="text-slate-500 mt-2">Manage your connection invitations and interests.</p>
+        </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-neutral-200">
+      <div className="flex border-b border-slate-200">
         <button
-          onClick={() => {
-            setActiveTab('received');
-            setMessage('');
-          }}
-          className={`px-6 py-3 text-sm font-semibold border-b-2 ${
+          onClick={() => { setActiveTab('received'); setMessage(''); }}
+          className={`px-8 py-4 text-sm font-semibold border-b-2 transition-all ${
             activeTab === 'received'
-              ? 'border-primary-600 text-primary-700 font-bold'
-              : 'border-transparent text-neutral-400 hover:text-neutral-600'
+              ? 'border-primary-600 text-primary-700 bg-primary-50/50'
+              : 'border-transparent text-slate-400 hover:text-slate-700 hover:bg-slate-50'
           }`}
         >
           Received Requests
         </button>
         <button
-          onClick={() => {
-            setActiveTab('sent');
-            setMessage('');
-          }}
-          className={`px-6 py-3 text-sm font-semibold border-b-2 ${
+          onClick={() => { setActiveTab('sent'); setMessage(''); }}
+          className={`px-8 py-4 text-sm font-semibold border-b-2 transition-all ${
             activeTab === 'sent'
-              ? 'border-primary-600 text-primary-700 font-bold'
-              : 'border-transparent text-neutral-400 hover:text-neutral-600'
+              ? 'border-primary-600 text-primary-700 bg-primary-50/50'
+              : 'border-transparent text-slate-400 hover:text-slate-700 hover:bg-slate-50'
           }`}
         >
           Sent Requests
@@ -96,75 +95,99 @@ const Interests = () => {
       </div>
 
       {message && (
-        <div className="p-4 bg-primary-50 border border-primary-100 text-primary-800 text-sm font-medium rounded-xl">
+        <div className="p-4 bg-primary-50/50 backdrop-blur-sm border border-primary-100 text-primary-800 text-sm font-medium rounded-2xl flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center text-primary-600"><Icon name="check" size={16} /></div>
           {message}
         </div>
       )}
 
       {loading ? (
-        <div className="text-center py-20 text-neutral-500 font-medium">Loading requests list...</div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+           {[...Array(4)].map((_, i) => (
+            <div key={i} className="bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-soft">
+              <div className="aspect-[4/5] shimmer"></div>
+              <div className="p-5 space-y-3">
+                <div className="h-5 bg-slate-100 rounded w-2/3 shimmer"></div>
+                <div className="h-4 bg-slate-100 rounded w-1/2 shimmer"></div>
+                <div className="pt-3 border-t border-slate-50 flex gap-2">
+                  <div className="h-10 bg-slate-100 rounded-xl flex-1 shimmer"></div>
+                  <div className="h-10 bg-slate-100 rounded-xl flex-1 shimmer"></div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {items.map((item) => {
             const userRef = activeTab === 'received' ? item.senderId : item.receiverId;
             const p = userRef?.profile;
             if (!p) return null;
+            
             return (
-              <div key={item._id} className="bg-white rounded-2xl border border-neutral-100 overflow-hidden shadow-sm flex flex-col justify-between">
-                <div className="aspect-[4/3] bg-neutral-100 relative overflow-hidden">
-                  {p.profilePicture ? (
-                    <img src={p.profilePicture} alt="Avatar" className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-4xl text-neutral-300">👤</div>
-                  )}
-                  <span className={`absolute top-3 left-3 text-[9px] font-extrabold px-2 py-0.5 rounded-full text-white shadow capitalize ${
+              <div key={item._id} className="group bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-soft hover:shadow-card-hover transition-all duration-300 flex flex-col hover:-translate-y-1">
+                <Link to={ROUTES.CLIENT.VIEW_PROFILE.replace(':id', p.profileId || userRef._id)} className="block aspect-[4/5] bg-slate-100 relative overflow-hidden">
+                  <img src={p.avatar || p.profilePicture || `https://ui-avatars.com/api/?name=${p.firstName}+${p.lastName}&background=14b8a6&color=fff&size=400`} alt="Avatar" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                  
+                  <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-slate-900/80 to-transparent"></div>
+                  
+                  <span className={`absolute top-3 left-3 text-[10px] font-bold px-3 py-1 rounded-full shadow-sm capitalize backdrop-blur-md border ${
                     item.status === 'pending'
-                      ? 'bg-amber-500'
+                      ? 'bg-amber-100/90 text-amber-700 border-amber-200'
                       : item.status === 'accepted'
-                      ? 'bg-emerald-500'
-                      : 'bg-neutral-400'
+                      ? 'bg-success-100/90 text-success-700 border-success-200'
+                      : 'bg-slate-100/90 text-slate-700 border-slate-200'
                   }`}>
                     {item.status}
                   </span>
-                </div>
-                <div className="p-5 space-y-4">
-                  <div className="space-y-1">
-                    <h3 className="font-heading font-bold text-base text-neutral-800">
+                  
+                  <div className="absolute bottom-4 left-4 text-white">
+                    <h3 className="font-serif font-bold text-xl drop-shadow-md">
                       {p.firstName} {p.lastName}
                     </h3>
-                    <p className="text-xs text-neutral-500 font-medium">
-                      {p.age} yrs • {p.gender} • {p.city || 'Location unknown'}
+                    <p className="text-xs font-medium text-white/90 drop-shadow-md">
+                      {p.age} Yrs • {p.city || 'Location unknown'}
                     </p>
-                    {item.message && (
-                      <p className="text-xs text-neutral-400 italic bg-neutral-50 p-2.5 rounded-lg border mt-2">
-                        "{item.message}"
-                      </p>
-                    )}
                   </div>
-                  <div className="flex gap-2 pt-2 border-t border-neutral-50">
+                </Link>
+                
+                <div className="p-5 flex-1 flex flex-col justify-between">
+                  {item.message && (
+                    <div className="mb-4 text-sm text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-100 italic relative">
+                      <Icon name="message" size={14} className="absolute top-3 right-3 text-slate-300" />
+                      "{item.message}"
+                    </div>
+                  )}
+                  
+                  <div className="flex gap-2 pt-2 border-t border-slate-100">
                     {activeTab === 'received' && item.status === 'pending' && (
                       <>
                         <button
                           onClick={() => handleAccept(item._id)}
-                          className="btn-primary text-xs py-2 px-3 rounded-lg flex-1 font-bold"
+                          className="btn flex-1 bg-primary-600 text-white hover:bg-primary-700 text-sm py-2.5 rounded-xl font-bold transition-all shadow-sm"
                         >
                           Accept
                         </button>
                         <button
                           onClick={() => handleReject(item._id)}
-                          className="btn-ghost text-xs py-2 px-3 border border-red-100 hover:bg-red-50 text-red-600 rounded-lg font-bold"
+                          className="btn flex-1 bg-danger-50 text-danger-700 hover:bg-danger-100 hover:text-danger-800 text-sm py-2.5 rounded-xl font-bold transition-all border border-danger/20"
                         >
-                          Reject
+                          Decline
                         </button>
                       </>
                     )}
                     {activeTab === 'sent' && item.status === 'pending' && (
                       <button
                         onClick={() => handleCancel(item._id)}
-                        className="btn-ghost text-xs py-2 px-3 border border-neutral-200 text-neutral-600 hover:bg-neutral-50 rounded-lg w-full font-bold"
+                        className="btn w-full bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-800 border border-slate-200 text-sm py-2.5 rounded-xl font-bold transition-all"
                       >
-                        Cancel Invitation Request
+                        Cancel Request
                       </button>
+                    )}
+                    {item.status !== 'pending' && (
+                      <div className="w-full text-center text-sm font-medium text-slate-400 py-2.5">
+                        No actions available
+                      </div>
                     )}
                   </div>
                 </div>
@@ -172,8 +195,12 @@ const Interests = () => {
             );
           })}
           {items.length === 0 && (
-            <div className="col-span-full text-center py-20 text-neutral-400 text-sm">
-              No connection requests found in this tab.
+            <div className="col-span-full flex flex-col items-center justify-center py-24 text-center">
+              <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center text-slate-400 mb-4">
+                <Icon name="message" size={32} />
+              </div>
+              <h3 className="text-lg font-bold text-slate-900 mb-1">No requests found</h3>
+              <p className="text-slate-500 max-w-sm">You haven't {activeTab === 'received' ? 'received' : 'sent'} any connection requests yet.</p>
             </div>
           )}
         </div>
