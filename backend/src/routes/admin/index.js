@@ -7,6 +7,7 @@ const adminReportRoutes = require('./adminReport.routes');
 const adminProfileRoutes = require('./adminProfile.routes');
 const adminPaymentRoutes = require('./adminPayment.routes');
 const adminSubscriptionRoutes = require('./adminSubscription.routes');
+const adminClientProfileRoutes = require('./adminClientProfile.routes');
 const adminDashboardController = require('../../controllers/admin/adminDashboard.controller');
 const verifyToken = require('../../middlewares/auth/verifyToken');
 const { isAdminRole } = require('../../middlewares/auth/hasPermission');
@@ -22,6 +23,7 @@ router.use('/reports', adminReportRoutes);
 router.use('/profiles', adminProfileRoutes);
 router.use('/payments', adminPaymentRoutes);
 router.use('/subscriptions', adminSubscriptionRoutes);
+router.use('/client-profiles', adminClientProfileRoutes);
 
 /**
  * @route   GET /api/v1/admin/dashboard

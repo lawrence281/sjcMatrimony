@@ -4,13 +4,14 @@ import { ROUTES } from '@/constants/routes';
 import { ROLES } from '@/constants/roles';
 
 const navItems = [
-  { path: ROUTES.ADMIN.DASHBOARD,     label: 'Dashboard',     icon: '📊' },
-  { path: ROUTES.ADMIN.PROFILES,      label: 'Profiles',      icon: '👤' },
-  { path: ROUTES.ADMIN.SUBSCRIPTIONS, label: 'Subscriptions', icon: '💳' },
-  { path: ROUTES.ADMIN.PAYMENTS,      label: 'Payments',      icon: '💰' },
-  { path: ROUTES.ADMIN.REPORTS,       label: 'Reports',       icon: '🚩' },
-  { path: ROUTES.ADMIN.SETTINGS,      label: 'Settings',      icon: '⚙️' },
-  { path: ROUTES.ADMIN.ADMINS,        label: 'Team',          icon: '👥' },
+  { path: ROUTES.ADMIN.DASHBOARD,        label: 'Dashboard',        icon: '📊' },
+  { path: ROUTES.ADMIN.PROFILES,         label: 'Profile Approval', icon: '👤' },
+  { path: ROUTES.ADMIN.CLIENT_PROFILES,  label: 'Members',          icon: '💍' },
+  { path: ROUTES.ADMIN.SUBSCRIPTIONS,    label: 'Subscriptions',    icon: '💳' },
+  { path: ROUTES.ADMIN.PAYMENTS,         label: 'Payments',         icon: '💰' },
+  { path: ROUTES.ADMIN.REPORTS,          label: 'Reports',          icon: '🚩' },
+  { path: ROUTES.ADMIN.SETTINGS,         label: 'Settings',         icon: '⚙️' },
+  { path: ROUTES.ADMIN.ADMINS,           label: 'Team',             icon: '👥' },
 ];
 
 const AdminSidebar = ({ isOpen, onToggle }) => {

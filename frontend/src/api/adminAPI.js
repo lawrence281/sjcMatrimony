@@ -12,11 +12,18 @@ const AdminAPI = {
   deleteUser: (id) => axiosInstance.delete(`/admin/users/${id}`),
   toggleUserStatus: (id) => axiosInstance.patch(`/admin/users/${id}/toggle-status`),
 
-  // Profiles
+  // Profiles (moderation — approve/reject/suspend)
   getProfiles: (params) => axiosInstance.get('/admin/profiles', { params }),
   approveProfile: (id) => axiosInstance.patch(`/admin/profiles/${id}/approve`),
   rejectProfile: (id, data) => axiosInstance.patch(`/admin/profiles/${id}/reject`, data),
   suspendProfile: (id, data) => axiosInstance.patch(`/admin/profiles/${id}/suspend`, data),
+
+  // Client Profiles (full CRUD — admin-created matrimony member profiles)
+  getClientProfiles: (params) => axiosInstance.get('/admin/client-profiles', { params }),
+  getClientProfileById: (id) => axiosInstance.get(`/admin/client-profiles/${id}`),
+  createClientProfile: (data) => axiosInstance.post('/admin/client-profiles', data),
+  updateClientProfile: (id, data) => axiosInstance.patch(`/admin/client-profiles/${id}`, data),
+  deleteClientProfile: (id) => axiosInstance.delete(`/admin/client-profiles/${id}`),
 
   // Payments
   getPayments: (params) => axiosInstance.get('/admin/payments', { params }),

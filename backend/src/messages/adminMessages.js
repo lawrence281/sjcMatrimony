@@ -12,6 +12,23 @@ const ADMIN_MESSAGES = Object.freeze({
   ACTIVITY_LOGS_FETCHED: 'Activity logs fetched successfully.',
   REPORTS_FETCHED: 'Reports fetched successfully.',
   REPORT_RESOLVED: 'Report resolved successfully.',
+
+  // Profile moderation
+  PROFILE_APPROVED: 'Profile approved successfully.',
+  PROFILE_REJECTED: 'Profile rejected successfully.',
+  PROFILE_SUSPENDED: 'Profile suspended successfully.',
+
+  // Admin-created client profiles
+  CLIENT_PROFILE_CREATED: 'Client profile created successfully.',
+  CLIENT_PROFILE_UPDATED: 'Client profile updated successfully.',
+  CLIENT_PROFILE_DELETED: 'Client profile deleted successfully.',
+  CLIENT_PROFILE_FETCHED: 'Client profile fetched successfully.',
+  CLIENT_PROFILES_FETCHED: 'Client profiles fetched successfully.',
+  CLIENT_PROFILE_NOT_FOUND: 'Client profile not found.',
+
+  // WhatsApp notification outcomes (for response metadata)
+  WHATSAPP_SENT: 'WhatsApp onboarding message sent.',
+  WHATSAPP_FAILED: 'WhatsApp message could not be delivered (profile created).',
 });
 
 module.exports = { ADMIN_MESSAGES };

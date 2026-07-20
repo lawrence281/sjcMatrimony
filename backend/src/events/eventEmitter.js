@@ -52,6 +52,10 @@ const APP_EVENTS = Object.freeze({
 
   // Admin
   REPORT_SUBMITTED: 'report.submitted',
+
+  // Admin — Client Profile Lifecycle
+  ADMIN_PROFILE_CREATED: 'admin.profile_created',
+  ADMIN_PROFILE_UPDATED: 'admin.profile_updated',
 });
 
 module.exports = { appEvents, APP_EVENTS };

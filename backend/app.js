@@ -21,10 +21,14 @@ const { COMMON_MESSAGES } = require('./src/messages/commonMessages');
 
 // Register event listeners
 const registerNotificationListeners = require('./src/events/listeners/notification.listener');
+const registerWhatsAppListeners = require('./src/events/listeners/whatsapp.listener');
+const whatsappService = require('./src/services/whatsapp/whatsapp.service');
 
 // ── Configure External Services ────────────────────────────
 configureCloudinary();
 registerNotificationListeners();
+registerWhatsAppListeners();
+whatsappService.init();
 
 const app = express();
 

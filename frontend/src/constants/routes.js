@@ -26,16 +26,17 @@ export const ROUTES = {
 
   // Admin Portal
   ADMIN: {
-    DASHBOARD:     '/admin/dashboard',
-    USERS:         '/admin/users',
-    USER_DETAIL:   '/admin/users/:id',
-    PROFILES:      '/admin/profiles',
-    PROFILE_DETAIL:'/admin/profiles/:id',
-    SUBSCRIPTIONS: '/admin/subscriptions',
-    PAYMENTS:      '/admin/payments',
-    REPORTS:       '/admin/reports',
-    SETTINGS:      '/admin/settings',
-    ADMINS:        '/admin/team',
+    DASHBOARD:       '/admin/dashboard',
+    USERS:           '/admin/users',
+    USER_DETAIL:     '/admin/users/:id',
+    PROFILES:        '/admin/profiles',
+    PROFILE_DETAIL:  '/admin/profiles/:id',
+    CLIENT_PROFILES: '/admin/client-profiles',
+    SUBSCRIPTIONS:   '/admin/subscriptions',
+    PAYMENTS:        '/admin/payments',
+    REPORTS:         '/admin/reports',
+    SETTINGS:        '/admin/settings',
+    ADMINS:          '/admin/team',
   },
 
   // Errors

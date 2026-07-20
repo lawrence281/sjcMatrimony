@@ -44,6 +44,7 @@ const AdminSubscriptions  = lazy(() => import('@/pages/admin/Subscriptions'));
 const AdminPayments       = lazy(() => import('@/pages/admin/Payments'));
 const AdminReports        = lazy(() => import('@/pages/admin/Reports'));
 const AdminSettings       = lazy(() => import('@/pages/admin/Settings'));
+const AdminClientProfiles = lazy(() => import('@/pages/admin/ClientProfiles'));
 
 const NotFound    = lazy(() => import('@/pages/errors/NotFound'));
 const Unauthorized = lazy(() => import('@/pages/errors/Unauthorized'));
@@ -71,14 +72,15 @@ function App() {
 
                     {/* ── Admin Routes ──────────────────────────────── */}
                     <Route element={<AdminRoute><AdminLayout /></AdminRoute>}>
-                      <Route path={ROUTES.ADMIN.DASHBOARD}      element={<AdminDashboard />} />
-                      <Route path={ROUTES.ADMIN.PROFILES}       element={<AdminProfiles />} />
-                      <Route path={ROUTES.ADMIN.USERS}          element={<AdminUsers />} />
-                      <Route path={ROUTES.ADMIN.ADMINS}         element={<AdminUsers />} />
-                      <Route path={ROUTES.ADMIN.SUBSCRIPTIONS}  element={<AdminSubscriptions />} />
-                      <Route path={ROUTES.ADMIN.PAYMENTS}       element={<AdminPayments />} />
-                      <Route path={ROUTES.ADMIN.REPORTS}        element={<AdminReports />} />
-                      <Route path={ROUTES.ADMIN.SETTINGS}       element={<AdminSettings />} />
+                      <Route path={ROUTES.ADMIN.DASHBOARD}        element={<AdminDashboard />} />
+                      <Route path={ROUTES.ADMIN.PROFILES}          element={<AdminProfiles />} />
+                      <Route path={ROUTES.ADMIN.CLIENT_PROFILES}   element={<AdminClientProfiles />} />
+                      <Route path={ROUTES.ADMIN.USERS}             element={<AdminUsers />} />
+                      <Route path={ROUTES.ADMIN.ADMINS}            element={<AdminUsers />} />
+                      <Route path={ROUTES.ADMIN.SUBSCRIPTIONS}     element={<AdminSubscriptions />} />
+                      <Route path={ROUTES.ADMIN.PAYMENTS}          element={<AdminPayments />} />
+                      <Route path={ROUTES.ADMIN.REPORTS}           element={<AdminReports />} />
+                      <Route path={ROUTES.ADMIN.SETTINGS}          element={<AdminSettings />} />
                     </Route>
 
                     {/* ── Client Routes ─────────────────────────────── */}
