@@ -1,74 +1,50 @@
 require('dotenv').config();
+const express = require('express');
+const cors = require('cors');
+const path = require('path');
+const connectDB = require('./config/db');
+const fs = require('fs');
 
-const http = require('http');
-const app = require('./app');
-const connectDB = require('./src/config/database');
-const initializeSocket = require('./src/socket/socket.init');
-const logger = require('./src/utils/logger');
+// Connect to MongoDB
+connectDB();
 
-const PORT = process.env.PORT || 5000;
-const NODE_ENV = process.env.NODE_ENV || 'development';
+const app = express();
 
-// ── Create HTTP Server ─────────────────────────────────────
-const httpServer = http.createServer(app);
+// Middleware
+app.use(cors({
+  origin: [
+    process.env.CLIENT_URL || 'http://localhost:5173',
+    process.env.ADMIN_URL || 'http://localhost:5174',
+    'http://localhost:5175',
+    'http://localhost:5176'
+  ],
+  credentials: true,
+}));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// ── Initialize Socket.io ───────────────────────────────────
-const io = initializeSocket(httpServer);
+// Ensure uploads directory exists
+if (!fs.existsSync('uploads')) fs.mkdirSync('uploads');
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Attach io to app for use in controllers if needed
-app.set('io', io);
+// Routes
+app.use('/api/auth', require('./routes/auth'));
+app.use('/api/orders', require('./routes/orders'));
+app.use('/api/dashboard', require('./routes/dashboard'));
+app.use('/api/ai', require('./routes/ai'));
+app.use('/api/profile', require('./routes/profile'));
 
-// ── Start Server ───────────────────────────────────────────
-const startServer = async () => {
-  try {
-    // Connect to MongoDB first
-    await connectDB();
+// Health check
+app.get('/api/health', (req, res) => res.json({ status: 'OK', timestamp: new Date() }));
 
-    httpServer.listen(PORT, () => {
-      logger.info('─────────────────────────────────────────────');
-      logger.info(`  🚀 Server running in ${NODE_ENV.toUpperCase()} mode`);
-      logger.info(`  📡 Port: ${PORT}`);
-      logger.info(`  🔗 API: http://localhost:${PORT}/api/v1`);
-      logger.info(`  📚 Docs: http://localhost:${PORT}/api-docs`);
-      logger.info('─────────────────────────────────────────────');
-    });
-  } catch (error) {
-    logger.error(`Failed to start server: ${error.message}`);
-    process.exit(1);
-  }
-};
-
-// ── Graceful Shutdown ──────────────────────────────────────
-const gracefulShutdown = (signal) => {
-  logger.info(`${signal} received. Shutting down gracefully...`);
-  httpServer.close(() => {
-    logger.info('HTTP server closed.');
-    const mongoose = require('mongoose');
-    mongoose.connection.close(false, () => {
-      logger.info('MongoDB connection closed.');
-      process.exit(0);
-    });
-  });
-
-  // Force shutdown after 30 seconds
-  setTimeout(() => {
-    logger.error('Forced shutdown after timeout.');
-    process.exit(1);
-  }, 30000);
-};
-
-process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-process.on('SIGINT', () => gracefulShutdown('SIGINT'));
-
-// ── Unhandled Rejections & Exceptions ─────────────────────
-process.on('unhandledRejection', (reason, promise) => {
-  logger.error('Unhandled Rejection:', { reason: reason?.message || reason, promise });
-  gracefulShutdown('unhandledRejection');
+// Error handler
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ success: false, message: err.message || 'Internal Server Error' });
 });
 
-process.on('uncaughtException', (error) => {
-  logger.error('Uncaught Exception:', { message: error.message, stack: error.stack });
-  gracefulShutdown('uncaughtException');
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`🚀 Backend API running on http://localhost:${PORT}`);
+  console.log(`📊 MongoDB: ${process.env.MONGODB_URI}`);
 });
-
-startServer();
