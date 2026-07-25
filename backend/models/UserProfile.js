@@ -312,7 +312,6 @@ userProfileSchema.pre('save', function (next) {
 // ─────────────────────────────────────────────
 // Index
 // ─────────────────────────────────────────────
-userProfileSchema.index({ userId: 1 }, { unique: true });
 userProfileSchema.index({ profileStatus: 1 });
 userProfileSchema.index({ membershipType: 1 });
 
