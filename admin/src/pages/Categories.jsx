@@ -1,1 +1,1 @@
-// Deleted as per refactoring
+// REMOVED: Categories page has been deleted from this project

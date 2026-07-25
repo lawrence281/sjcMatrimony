@@ -1,7 +1,6 @@
 const Anthropic = require('@anthropic-ai/sdk');
-const Order = require('../models/Order');
-const Product = require('../models/Product');
 const User = require('../models/User');
+const UserProfile = require('../models/UserProfile');
 const { sendAIInsights } = require('../services/whatsappService');
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -9,102 +8,95 @@ const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 // MCP-style tools that Claude can call to fetch MongoDB data
 const mongoTools = [
   {
-    name: 'get_sales_summary',
-    description: 'Get overall sales summary including total orders, revenue, and recent trends',
+    name: 'get_profile_stats',
+    description: 'Get overall profile statistics including total profiles, active members, and pending verifications',
     input_schema: { type: 'object', properties: {}, required: [] },
   },
   {
-    name: 'get_top_products',
-    description: 'Get the top performing products by sales count',
-    input_schema: {
-      type: 'object',
-      properties: { limit: { type: 'number', description: 'Number of products to return (default 5)' } },
-      required: [],
-    },
-  },
-  {
-    name: 'get_orders_by_geo',
-    description: 'Get order distribution by geographical location',
+    name: 'get_membership_breakdown',
+    description: 'Get breakdown of profiles by membership type (Free, Silver, Gold, Platinum)',
     input_schema: { type: 'object', properties: {}, required: [] },
   },
   {
-    name: 'get_monthly_revenue',
-    description: 'Get monthly revenue data for the past 6 months',
+    name: 'get_recent_registrations',
+    description: 'Get monthly registration counts for the past 6 months',
     input_schema: { type: 'object', properties: {}, required: [] },
   },
   {
-    name: 'get_top_customers',
-    description: 'Get the top customers by order count and spending',
+    name: 'get_profile_status_breakdown',
+    description: 'Get breakdown of profiles by status (Active, Pending, Suspended, Rejected)',
     input_schema: { type: 'object', properties: {}, required: [] },
   },
   {
-    name: 'get_inventory_status',
-    description: 'Get current inventory status and low-stock products',
+    name: 'get_gender_distribution',
+    description: 'Get the distribution of male and female profiles',
+    input_schema: { type: 'object', properties: {}, required: [] },
+  },
+  {
+    name: 'get_top_members',
+    description: 'Get recently joined or active premium members',
     input_schema: { type: 'object', properties: {}, required: [] },
   },
 ];
 
-// Tool execution function - these are the "MCP" handlers
+// Tool execution function
 const executeTool = async (toolName, toolInput) => {
   switch (toolName) {
-    case 'get_sales_summary': {
-      const [totalOrders, revenueAgg] = await Promise.all([
-        Order.countDocuments(),
-        Order.aggregate([{ $group: { _id: null, total: { $sum: '$total' }, avgOrder: { $avg: '$total' } } }]),
+    case 'get_profile_stats': {
+      const [totalUsers, totalProfiles, activeProfiles, pendingVerifications] = await Promise.all([
+        User.countDocuments({ role: 'user' }),
+        UserProfile.countDocuments(),
+        UserProfile.countDocuments({ profileStatus: 'Active' }),
+        UserProfile.countDocuments({ verificationStatus: 'Unverified' }),
       ]);
-      const pendingOrders = await Order.countDocuments({ status: 'pending' });
-      const deliveredOrders = await Order.countDocuments({ status: 'delivered' });
-      return {
-        totalOrders, pendingOrders, deliveredOrders,
-        totalRevenue: revenueAgg[0]?.total || 0,
-        averageOrderValue: revenueAgg[0]?.avgOrder || 0,
-      };
+      return { totalUsers, totalProfiles, activeProfiles, pendingVerifications };
     }
-    case 'get_top_products': {
-      const limit = toolInput.limit || 5;
-      const products = await Product.find()
-        .populate('category', 'name')
-        .sort('-salesCount')
-        .limit(limit)
-        .select('name salesCount price averageRating totalReviews stock category');
-      return products.map(p => ({
-        name: p.name, category: p.category?.name, salesCount: p.salesCount,
-        price: p.price, avgRating: p.averageRating, reviews: p.totalReviews, stock: p.stock,
-      }));
-    }
-    case 'get_orders_by_geo': {
-      const geo = await Order.aggregate([
-        { $group: { _id: { city: '$shippingAddress.city', state: '$shippingAddress.state' }, count: { $sum: 1 }, revenue: { $sum: '$total' } } },
-        { $sort: { count: -1 } }, { $limit: 10 },
+    case 'get_membership_breakdown': {
+      const breakdown = await UserProfile.aggregate([
+        { $group: { _id: '$membershipType', count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
       ]);
-      return geo.map(g => ({ city: g._id.city, state: g._id.state, orders: g.count, revenue: g.revenue }));
+      return breakdown.map(b => ({ membershipType: b._id || 'Free', count: b.count }));
     }
-    case 'get_monthly_revenue': {
+    case 'get_recent_registrations': {
       const sixMonthsAgo = new Date();
       sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-      const monthly = await Order.aggregate([
-        { $match: { createdAt: { $gte: sixMonthsAgo } } },
-        { $group: { _id: { year: { $year: '$createdAt' }, month: { $month: '$createdAt' } }, revenue: { $sum: '$total' }, orders: { $sum: 1 } } },
+      const monthly = await User.aggregate([
+        { $match: { createdAt: { $gte: sixMonthsAgo }, role: 'user' } },
+        {
+          $group: {
+            _id: { year: { $year: '$createdAt' }, month: { $month: '$createdAt' } },
+            count: { $sum: 1 },
+          },
+        },
         { $sort: { '_id.year': 1, '_id.month': 1 } },
       ]);
       return monthly;
     }
-    case 'get_top_customers': {
-      const topUsers = await Order.aggregate([
-        { $match: { user: { $exists: true, $ne: null } } },
-        { $group: { _id: '$user', orderCount: { $sum: 1 }, totalSpent: { $sum: '$total' } } },
-        { $sort: { totalSpent: -1 } }, { $limit: 5 },
-        { $lookup: { from: 'users', localField: '_id', foreignField: '_id', as: 'u' } },
-        { $unwind: '$u' },
-        { $project: { name: '$u.name', email: '$u.email', orderCount: 1, totalSpent: 1 } },
+    case 'get_profile_status_breakdown': {
+      const statuses = await UserProfile.aggregate([
+        { $group: { _id: '$profileStatus', count: { $sum: 1 } } },
       ]);
-      return topUsers;
+      return statuses.map(s => ({ status: s._id || 'Pending', count: s.count }));
     }
-    case 'get_inventory_status': {
-      const lowStock = await Product.find({ stock: { $lt: 10 }, isActive: true }).select('name stock price salesCount');
-      const outOfStock = await Product.countDocuments({ stock: 0 });
-      const totalProducts = await Product.countDocuments({ isActive: true });
-      return { totalProducts, outOfStock, lowStockProducts: lowStock };
+    case 'get_gender_distribution': {
+      const genders = await UserProfile.aggregate([
+        { $group: { _id: '$gender', count: { $sum: 1 } } },
+      ]);
+      return genders.map(g => ({ gender: g._id || 'Not specified', count: g.count }));
+    }
+    case 'get_top_members': {
+      const members = await UserProfile.find({ membershipType: { $ne: 'Free' } })
+        .populate('userId', 'name email')
+        .sort('-createdAt')
+        .limit(5)
+        .select('firstName lastName membershipType profileStatus verificationStatus userId');
+      return members.map(m => ({
+        name: `${m.firstName || ''} ${m.lastName || ''}`.trim() || m.userId?.name,
+        email: m.userId?.email,
+        membership: m.membershipType,
+        status: m.profileStatus,
+      }));
     }
     default:
       return { error: 'Unknown tool' };
@@ -127,16 +119,16 @@ const analyze = async (req, res) => {
       });
     }
 
-    const systemPrompt = `You are a senior eCommerce business analyst AI. You have access to MongoDB tools to fetch live business data. 
+    const systemPrompt = `You are a senior matrimony platform business analyst AI. You have access to MongoDB tools to fetch live platform data. 
 Analyze the data and provide actionable insights in JSON format with these exact keys:
-- "suggestions": array of 3-5 specific business improvement suggestions
-- "salesAnalysis": detailed sales performance analysis paragraph  
-- "productInsights": product performance insights paragraph
-- "predictions": sales predictions and forecasts paragraph
+- "suggestions": array of 3-5 specific platform improvement suggestions
+- "salesAnalysis": detailed membership and engagement analysis paragraph  
+- "productInsights": profile quality and completion insights paragraph
+- "predictions": registration growth predictions and trends paragraph
 - "summary": one-sentence executive summary
 Always call the available tools to get real data before analyzing.`;
 
-    const messages = [{ role: 'user', content: 'Analyze our eCommerce store performance and provide comprehensive business insights with predictions.' }];
+    const messages = [{ role: 'user', content: 'Analyze our matrimony platform performance and provide comprehensive business insights with predictions.' }];
 
     let response = await client.messages.create({
       model: 'claude-opus-4-5',

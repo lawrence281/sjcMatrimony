@@ -1,18 +1,12 @@
-export const APP_NAME = 'DK Ignite Admin';
-export const CURRENCY_SYMBOL = '₹';
-export const CURRENCY_LOCALE = 'en-IN';
+export const APP_NAME = 'SJC Matrimony Admin';
 
 export const MESSAGES = {
   AUTH: {
-    LOGIN_SUCCESS: 'Access granted, Commander.',
+    LOGIN_SUCCESS: 'Access granted.',
     LOGOUT: 'Admin session ended.',
   },
-  PRODUCT: {
-    CREATED: 'New firework added to inventory.',
-    UPDATED: 'Inventory updated successfully.',
-    DELETED: 'Product removed from stock.',
-  },
-  ORDER: {
-    UPDATED: 'Display status updated.',
+  PROFILE: {
+    UPDATED: 'Profile updated successfully.',
+    CREATED: 'Profile created successfully.',
   },
 };

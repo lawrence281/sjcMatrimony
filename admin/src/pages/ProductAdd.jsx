@@ -1,1 +1,1 @@
-// Deleted as per refactoring
+// REMOVED: ProductAdd page has been deleted from this project

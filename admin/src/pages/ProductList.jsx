@@ -1,1 +1,1 @@
-// Deleted as per refactoring
+// REMOVED: ProductList page has been deleted from this project

@@ -1,11 +1,23 @@
 import { useState, useEffect } from 'react'
-import { ShoppingBag, IndianRupee, Users, Package, TrendingUp, Sparkles, Send, BarChart2, Globe, Star, RefreshCw } from 'lucide-react'
+import { Users, UserCheck, Clock, Crown, TrendingUp, Sparkles, BarChart2, RefreshCw, Heart } from 'lucide-react'
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts'
 import api from '../services/api'
 import toast from 'react-hot-toast'
-import { formatPrice } from '../utils/format'
 
-const STATUS_COLORS = { pending: '#f59e0b', processing: '#3b82f6', shipped: '#6c63ff', delivered: '#22c55e', cancelled: '#ef4444' }
+const STATUS_COLORS = {
+  Active: '#22c55e',
+  Pending: '#f59e0b',
+  Suspended: '#ef4444',
+  Rejected: '#6b7280',
+}
+
+const MEMBERSHIP_COLORS = {
+  Free: '#6b7280',
+  Silver: '#94a3b8',
+  Gold: '#f59e0b',
+  Platinum: '#8b5cf6',
+}
+
 const MONTH_NAMES = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
 export default function Dashboard() {
@@ -44,22 +56,32 @@ export default function Dashboard() {
 
   if (loading) return <div className="loading-spinner"><div className="spinner" /></div>
 
-  const monthlyData = analytics?.monthlyRevenue?.map(m => ({
-    name: MONTH_NAMES[m._id.month], revenue: Math.round(m.revenue), orders: m.orders
+  const monthlyData = analytics?.monthlyRegistrations?.map(m => ({
+    name: MONTH_NAMES[m._id.month], registrations: m.count
   })) || []
 
-  const statusData = analytics?.ordersByStatus?.map(s => ({
-    name: s._id.charAt(0).toUpperCase() + s._id.slice(1), value: s.count, color: STATUS_COLORS[s._id] || '#6c63ff'
+  const statusData = analytics?.profilesByStatus?.map(s => ({
+    name: s._id || 'Pending',
+    value: s.count,
+    color: STATUS_COLORS[s._id] || '#6c63ff'
   })) || []
 
-  const maxGeo = Math.max(...(analytics?.ordersByGeo || []).map(g => g.count), 1)
+  const membershipData = analytics?.profilesByMembership?.map(m => ({
+    name: m._id || 'Free',
+    value: m.count,
+    color: MEMBERSHIP_COLORS[m._id] || '#6c63ff'
+  })) || []
+
+  const genderData = analytics?.profilesByGender?.map(g => ({
+    name: g._id || 'Not specified', value: g.count
+  })) || []
 
   return (
     <div>
       <div className="page-header-row page-header">
         <div>
           <h1>Dashboard</h1>
-          <p>Welcome back! Monitor your pyrotechnics empire here.</p>
+          <p>Welcome back! Monitor your matrimony platform here.</p>
         </div>
         <button className="btn btn-primary" onClick={generateInsights} disabled={loadingAI}>
           <Sparkles size={16} />
@@ -70,35 +92,35 @@ export default function Dashboard() {
       {/* Stats */}
       <div className="stats-grid">
         <div className="stat-card">
-          <div className="stat-icon icon-purple"><ShoppingBag size={20} /></div>
+          <div className="stat-icon icon-purple"><Users size={20} /></div>
           <div className="stat-info">
-            <div className="stat-label">Total Orders</div>
-            <div className="stat-value">{analytics?.totalOrders || 0}</div>
-            <div className="stat-change">↑ All time</div>
-          </div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon icon-green"><IndianRupee size={20} /></div>
-          <div className="stat-info">
-            <div className="stat-label">Total Revenue</div>
-            <div className="stat-value">{formatPrice(analytics?.totalRevenue || 0)}</div>
-            <div className="stat-change">↑ All time</div>
-          </div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon icon-blue"><Users size={20} /></div>
-          <div className="stat-info">
-            <div className="stat-label">Total Customers</div>
+            <div className="stat-label">Total Members</div>
             <div className="stat-value">{analytics?.totalUsers || 0}</div>
             <div className="stat-change">↑ Registered</div>
           </div>
         </div>
         <div className="stat-card">
-          <div className="stat-icon icon-orange"><Package size={20} /></div>
+          <div className="stat-icon icon-green"><Heart size={20} /></div>
           <div className="stat-info">
-            <div className="stat-label">Active Products</div>
-            <div className="stat-value">{analytics?.totalProducts || 0}</div>
-            <div className="stat-change">In catalog</div>
+            <div className="stat-label">Total Profiles</div>
+            <div className="stat-value">{analytics?.totalProfiles || 0}</div>
+            <div className="stat-change">↑ All time</div>
+          </div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-icon icon-blue"><UserCheck size={20} /></div>
+          <div className="stat-info">
+            <div className="stat-label">Active Profiles</div>
+            <div className="stat-value">{analytics?.activeProfiles || 0}</div>
+            <div className="stat-change">In platform</div>
+          </div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-icon icon-orange"><Clock size={20} /></div>
+          <div className="stat-info">
+            <div className="stat-label">Pending Verifications</div>
+            <div className="stat-value">{analytics?.pendingVerifications || 0}</div>
+            <div className="stat-change">Awaiting review</div>
           </div>
         </div>
       </div>
@@ -109,7 +131,7 @@ export default function Dashboard() {
           <div className="ai-panel-header">
             <div className="ai-panel-title">
               <Sparkles size={18} color="var(--accent-light)" />
-              Claude AI Business Insights
+              Claude AI Platform Insights
               <span className="ai-badge">LIVE</span>
             </div>
             <button className="btn btn-sm btn-outline" onClick={generateInsights} disabled={loadingAI}>
@@ -124,26 +146,26 @@ export default function Dashboard() {
           <div className="grid-2" style={{ gap: 12 }}>
             {insights.salesAnalysis && (
               <div className="ai-insight">
-                <div className="ai-insight-label">📈 Sales Analysis</div>
+                <div className="ai-insight-label">📈 Membership Analysis</div>
                 <p>{insights.salesAnalysis}</p>
               </div>
             )}
             {insights.productInsights && (
               <div className="ai-insight">
-                <div className="ai-insight-label">🏆 Product Performance</div>
+                <div className="ai-insight-label">👤 Profile Quality</div>
                 <p>{insights.productInsights}</p>
               </div>
             )}
           </div>
           {insights.predictions && (
             <div className="ai-insight" style={{ marginTop: 10 }}>
-              <div className="ai-insight-label">🔮 Sales Predictions</div>
+              <div className="ai-insight-label">🔮 Growth Predictions</div>
               <p>{insights.predictions}</p>
             </div>
           )}
           {insights.suggestions?.length > 0 && (
             <div className="ai-insight" style={{ marginTop: 10 }}>
-              <div className="ai-insight-label">💡 Business Suggestions</div>
+              <div className="ai-insight-label">💡 Platform Suggestions</div>
               <ol className="ai-suggestions">
                 {insights.suggestions.map((s, i) => <li key={i}>{s}</li>)}
               </ol>
@@ -152,26 +174,26 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Charts */}
+      {/* Charts Row 1 */}
       <div className="grid-2 chart-section">
         <div className="card">
           <div className="card-title-row">
-            <span className="card-title">Revenue Trend</span>
+            <span className="card-title">Monthly Registrations</span>
             <TrendingUp size={16} color="var(--text-muted)" />
           </div>
           <div className="chart-container">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={monthlyData}>
                 <defs>
-                  <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
+                  <linearGradient id="regGrad" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#6c63ff" stopOpacity={0.3} />
                     <stop offset="95%" stopColor="#6c63ff" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#5a6072' }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 11, fill: '#5a6072' }} axisLine={false} tickLine={false} tickFormatter={v => formatPrice(v)} />
-                <Tooltip contentStyle={{ background: '#1e2130', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, fontSize: 12 }} formatter={v => [formatPrice(v), 'Revenue']} />
-                <Area type="monotone" dataKey="revenue" stroke="#6c63ff" strokeWidth={2} fill="url(#revGrad)" />
+                <YAxis tick={{ fontSize: 11, fill: '#5a6072' }} axisLine={false} tickLine={false} />
+                <Tooltip contentStyle={{ background: '#1e2130', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, fontSize: 12 }} formatter={v => [v, 'Registrations']} />
+                <Area type="monotone" dataKey="registrations" stroke="#6c63ff" strokeWidth={2} fill="url(#regGrad)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -179,7 +201,7 @@ export default function Dashboard() {
 
         <div className="card">
           <div className="card-title-row">
-            <span className="card-title">Orders by Status</span>
+            <span className="card-title">Profile Status Distribution</span>
             <BarChart2 size={16} color="var(--text-muted)" />
           </div>
           <div className="chart-container">
@@ -196,48 +218,61 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* Charts Row 2 */}
       <div className="grid-2 chart-section">
-        {/* Top Products */}
+        {/* Membership Breakdown */}
         <div className="card">
-          <div className="card-title">🏆 Top Products by Sales</div>
-          <div className="top-products-list">
-            {analytics?.topProducts?.map((p, i) => (
-              <div key={p._id} className="top-product-item">
-                <div className={`top-product-rank rank-${i + 1}`}>{i + 1}</div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</div>
-                  <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{p.salesCount} sold · {formatPrice(p.price)}</div>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  <div className="stars">{'★'.repeat(Math.round(p.averageRating || 0))}</div>
-                  <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{p.averageRating}</div>
-                </div>
-              </div>
-            ))}
+          <div className="card-title">👑 Membership Breakdown</div>
+          <div className="chart-container">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={membershipData} layout="vertical">
+                <XAxis type="number" tick={{ fontSize: 11, fill: '#5a6072' }} axisLine={false} tickLine={false} />
+                <YAxis dataKey="name" type="category" tick={{ fontSize: 11, fill: '#5a6072' }} axisLine={false} tickLine={false} width={60} />
+                <Tooltip contentStyle={{ background: '#1e2130', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, fontSize: 12 }} />
+                <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+                  {membershipData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Top Users */}
+        {/* Recent Profiles */}
         <div className="card">
-          <div className="card-title">👑 Top Customers</div>
+          <div className="card-title">🆕 Recent Profiles</div>
           <div className="table-wrapper">
             <table>
               <thead>
                 <tr>
-                  <th>Customer</th>
-                  <th>Orders</th>
-                  <th>Spent</th>
+                  <th>Member</th>
+                  <th>Status</th>
+                  <th>Membership</th>
                 </tr>
               </thead>
               <tbody>
-                {analytics?.topUsers?.map((u) => (
-                  <tr key={u._id}>
+                {analytics?.recentProfiles?.map((p) => (
+                  <tr key={p._id}>
                     <td>
-                      <div style={{ fontWeight: 600, fontSize: 13 }}>{u.name}</div>
-                      <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{u.email}</div>
+                      <div style={{ fontWeight: 600, fontSize: 13 }}>
+                        {p.firstName ? `${p.firstName} ${p.lastName || ''}`.trim() : p.userId?.name || 'N/A'}
+                      </div>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{p.gender || ''}</div>
                     </td>
-                    <td style={{ color: 'var(--accent-light)', fontWeight: 700 }}>{u.orderCount}</td>
-                    <td style={{ color: 'var(--success)', fontWeight: 600 }}>{formatPrice(u.totalSpent || 0)}</td>
+                    <td>
+                      <span style={{
+                        fontSize: 11,
+                        padding: '2px 8px',
+                        borderRadius: 4,
+                        background: STATUS_COLORS[p.profileStatus] ? `${STATUS_COLORS[p.profileStatus]}22` : 'rgba(108,99,255,0.1)',
+                        color: STATUS_COLORS[p.profileStatus] || '#6c63ff',
+                        fontWeight: 600,
+                      }}>
+                        {p.profileStatus || 'Pending'}
+                      </span>
+                    </td>
+                    <td style={{ color: 'var(--accent-light)', fontWeight: 600, fontSize: 12 }}>
+                      {p.membershipType || 'Free'}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -246,33 +281,30 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Orders by Geography */}
-      <div className="card chart-section">
-        <div className="card-title-row">
-          <span className="card-title"><Globe size={16} style={{ display: 'inline', marginRight: 6, verticalAlign: 'middle' }} />Orders by Geography</span>
+      {/* Gender Distribution */}
+      {genderData.length > 0 && (
+        <div className="card chart-section">
+          <div className="card-title-row">
+            <span className="card-title">👫 Gender Distribution</span>
+          </div>
+          <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
+            {genderData.map((g, i) => {
+              const total = genderData.reduce((sum, d) => sum + d.value, 0)
+              const pct = total > 0 ? Math.round((g.value / total) * 100) : 0
+              return (
+                <div key={i} style={{ flex: 1, minWidth: 120 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>{g.name}</div>
+                  <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--accent-light)' }}>{g.value}</div>
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8 }}>{pct}% of total</div>
+                  <div style={{ height: 6, borderRadius: 3, background: 'var(--border)' }}>
+                    <div style={{ height: '100%', borderRadius: 3, width: `${pct}%`, background: i === 0 ? '#6c63ff' : '#ec4899' }} />
+                  </div>
+                </div>
+              )
+            })}
+          </div>
         </div>
-        <div className="table-wrapper">
-          <table className="geo-table">
-            <thead>
-              <tr><th>City</th><th>State</th><th>Orders</th><th>Revenue</th><th style={{ width: 120 }}>Share</th></tr>
-            </thead>
-            <tbody>
-              {analytics?.ordersByGeo?.map((g, i) => (
-                <tr key={i}>
-                  <td style={{ fontWeight: 600 }}>{g._id.city}</td>
-                  <td style={{ color: 'var(--text-muted)' }}>{g._id.state}</td>
-                  <td style={{ color: 'var(--accent-light)', fontWeight: 700 }}>{g.count}</td>
-                  <td style={{ color: 'var(--success)' }}>{formatPrice(g.revenue || 0)}</td>
-                  <td>
-                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 3 }}>{Math.round((g.count / maxGeo) * 100)}%</div>
-                    <div className="geo-bar-bg"><div className="geo-bar" style={{ width: `${(g.count / maxGeo) * 100}%` }} /></div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      )}
     </div>
   )
 }

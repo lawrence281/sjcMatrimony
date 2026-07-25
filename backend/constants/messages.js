@@ -7,21 +7,6 @@ module.exports = {
     UNAUTHORIZED: 'Not authorized, token failed',
     NO_TOKEN: 'Not authorized, no token',
   },
-  ORDER: {
-    CREATED: 'Order placed successfully',
-    UPDATED: 'Order status updated',
-    NOT_FOUND: 'Order not found',
-  },
-  PRODUCT: {
-    CREATED: 'Product added successfully',
-    UPDATED: 'Product updated successfully',
-    DELETED: 'Product removed successfully',
-    NOT_FOUND: 'Product not found',
-  },
-  CATEGORY: {
-    CREATED: 'Category created successfully',
-    NOT_FOUND: 'Category not found',
-  },
   GENERAL: {
     SERVER_ERROR: 'Internal Server Error',
     HEALTH_OK: 'Backend system is healthy',

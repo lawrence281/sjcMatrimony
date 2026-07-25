@@ -1,107 +1,76 @@
-const Order = require('../models/Order');
-const Product = require('../models/Product');
 const User = require('../models/User');
+const UserProfile = require('../models/UserProfile');
 
 // GET /api/dashboard/analytics
 const getAnalytics = async (req, res) => {
   try {
-    // Total purchases and revenue
-    const [totalOrders, totalRevenue] = await Promise.all([
-      Order.countDocuments(),
-      Order.aggregate([{ $group: { _id: null, total: { $sum: '$total' } } }]),
+    // Total users and profiles
+    const [totalUsers, totalProfiles] = await Promise.all([
+      User.countDocuments({ role: 'user' }),
+      UserProfile.countDocuments(),
     ]);
 
-    // Orders by status
-    const ordersByStatus = await Order.aggregate([
-      { $group: { _id: '$status', count: { $sum: 1 } } },
+    // Profiles by status
+    const profilesByStatus = await UserProfile.aggregate([
+      { $group: { _id: '$profileStatus', count: { $sum: 1 } } },
     ]);
 
-    // Orders by geography (city/state)
-    const ordersByGeo = await Order.aggregate([
-      {
-        $group: {
-          _id: { city: '$shippingAddress.city', state: '$shippingAddress.state', country: '$shippingAddress.country' },
-          count: { $sum: 1 },
-          revenue: { $sum: '$total' },
-        },
-      },
+    // Profiles by verification status
+    const profilesByVerification = await UserProfile.aggregate([
+      { $group: { _id: '$verificationStatus', count: { $sum: 1 } } },
+    ]);
+
+    // Profiles by membership type
+    const profilesByMembership = await UserProfile.aggregate([
+      { $group: { _id: '$membershipType', count: { $sum: 1 } } },
       { $sort: { count: -1 } },
-      { $limit: 10 },
     ]);
 
-    // Most purchased products
-    const topProducts = await Product.find()
-      .populate('category', 'name')
-      .sort('-salesCount')
-      .limit(5)
-      .select('name salesCount price images averageRating');
-
-    // Top users by order count
-    const topUsers = await Order.aggregate([
-      { $match: { user: { $exists: true, $ne: null } } },
-      { $group: { _id: '$user', orderCount: { $sum: 1 }, totalSpent: { $sum: '$total' } } },
-      { $sort: { orderCount: -1 } },
-      { $limit: 5 },
-      {
-        $lookup: {
-          from: 'users',
-          localField: '_id',
-          foreignField: '_id',
-          as: 'userDetails',
-        },
-      },
-      { $unwind: '$userDetails' },
-      {
-        $project: {
-          name: '$userDetails.name',
-          email: '$userDetails.email',
-          avatar: '$userDetails.avatar',
-          orderCount: 1,
-          totalSpent: 1,
-        },
-      },
+    // Profiles by gender
+    const profilesByGender = await UserProfile.aggregate([
+      { $group: { _id: '$gender', count: { $sum: 1 } } },
     ]);
 
-    // Monthly revenue for chart (last 6 months)
+    // Monthly registrations (last 6 months)
     const sixMonthsAgo = new Date();
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-    const monthlyRevenue = await Order.aggregate([
-      { $match: { createdAt: { $gte: sixMonthsAgo } } },
+    const monthlyRegistrations = await User.aggregate([
+      { $match: { createdAt: { $gte: sixMonthsAgo }, role: 'user' } },
       {
         $group: {
           _id: { year: { $year: '$createdAt' }, month: { $month: '$createdAt' } },
-          revenue: { $sum: '$total' },
-          orders: { $sum: 1 },
+          count: { $sum: 1 },
         },
       },
       { $sort: { '_id.year': 1, '_id.month': 1 } },
     ]);
 
-    // Recent orders
-    const recentOrders = await Order.find()
-      .populate('user', 'name email')
+    // Recent profiles
+    const recentProfiles = await UserProfile.find()
+      .populate('userId', 'name email createdAt')
       .sort('-createdAt')
-      .limit(5);
+      .limit(5)
+      .select('firstName lastName gender profileStatus verificationStatus membershipType createdAt userId');
 
-    // Total products and users
-    const [totalProducts, totalUsers] = await Promise.all([
-      Product.countDocuments({ isActive: true }),
-      User.countDocuments({ role: 'user' }),
-    ]);
+    // Pending verifications count
+    const pendingVerifications = await UserProfile.countDocuments({ verificationStatus: 'Unverified' });
+
+    // Active profiles count
+    const activeProfiles = await UserProfile.countDocuments({ profileStatus: 'Active' });
 
     res.json({
       success: true,
       analytics: {
-        totalOrders,
-        totalRevenue: totalRevenue[0]?.total || 0,
-        totalProducts,
         totalUsers,
-        ordersByStatus,
-        ordersByGeo,
-        topProducts,
-        topUsers,
-        monthlyRevenue,
-        recentOrders,
+        totalProfiles,
+        activeProfiles,
+        pendingVerifications,
+        profilesByStatus,
+        profilesByVerification,
+        profilesByMembership,
+        profilesByGender,
+        monthlyRegistrations,
+        recentProfiles,
       },
     });
   } catch (error) {

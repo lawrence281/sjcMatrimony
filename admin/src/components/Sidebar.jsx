@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, Package, ShoppingCart, LogOut, Sparkles, LayoutGrid, Sun, Moon, Users } from 'lucide-react'
+import { LayoutDashboard, LogOut, Sparkles, Sun, Moon, Users } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 
@@ -11,7 +11,7 @@ export default function Sidebar() {
       <div className="sidebar-logo">
         <div className="sidebar-logo-icon"><Sparkles size={16} fill="currentColor" /></div>
         <div>
-          <span>DK IGNITE</span>
+          <span>SJC Matrimony</span>
           <small>Admin Portal</small>
         </div>
       </div>
@@ -22,15 +22,10 @@ export default function Sidebar() {
           <LayoutDashboard size={17} />
           Dashboard
         </NavLink>
-        <NavLink to="/orders">
-          <ShoppingCart size={17} />
-          Orders
-        </NavLink>
         <NavLink to="/users">
           <Users size={17} />
-          Users Management
+          Profile Management
         </NavLink>
-
       </nav>
 
       <div className="sidebar-footer">
