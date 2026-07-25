@@ -401,43 +401,379 @@ const getAllProfiles = async (req, res) => {
 };
 
 // ─────────────────────────────────────────────
-// POST /api/profile/admin/create (admin only)
-// Create a new User and Profile in one step
+// POST /api/profile/admin/create-full (admin only)
+// Single-page full profile creation by Admin
 // ─────────────────────────────────────────────
-const createProfileAdmin = async (req, res) => {
+const createFullProfileAdmin = async (req, res) => {
   try {
-    const { name, email, password, mobileNumber } = req.body;
-    
-    if (!name || !email || !password) {
-      return res.status(BAD_REQUEST).json({ success: false, message: 'Name, email, and password are required' });
-    }
-
-    const User = require('../models/User');
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(BAD_REQUEST).json({ success: false, message: 'User with this email already exists' });
-    }
-
-    // Create the User
-    const user = await User.create({
-      name,
+    const {
       email,
       password,
-      role: 'user'
+      confirmPassword,
+      profileStatus = 'Active',
+      verificationStatus = 'Verified',
+      membershipType = 'Free',
+      premiumMember = false,
+      featuredProfile = false,
+      blocked = false,
+      adminRemarks = '',
+      basic = {},
+      religious = {},
+      personal = {},
+      education = {},
+      career = {},
+      family = {},
+      address = {},
+      church = {},
+      about = {},
+      preference = {},
+    } = req.body;
+
+    const firstName = (basic.firstName || req.body.firstName || req.body.name?.split(' ')[0] || '').trim();
+    const lastName = (basic.lastName || req.body.lastName || req.body.name?.split(' ').slice(1).join(' ') || '').trim();
+    const gender = basic.gender || req.body.gender || '';
+    const dateOfBirth = basic.dateOfBirth || req.body.dateOfBirth || null;
+    const mobileNumber = (basic.mobileNumber || req.body.mobileNumber || '').trim();
+    const userEmail = (email || basic.email || '').trim().toLowerCase();
+
+    // Field-level Validations
+    if (!userEmail || !/\S+@\S+\.\S+/.test(userEmail)) {
+      return res.status(BAD_REQUEST).json({ success: false, message: 'Valid email address is required' });
+    }
+
+    if (!password || password.length < 6) {
+      return res.status(BAD_REQUEST).json({ success: false, message: 'Password must be at least 6 characters long' });
+    }
+
+    if (confirmPassword && password !== confirmPassword) {
+      return res.status(BAD_REQUEST).json({ success: false, message: 'Password and Confirm Password do not match' });
+    }
+
+    if (!firstName || firstName.length < 2) {
+      return res.status(BAD_REQUEST).json({ success: false, message: 'First Name (at least 2 characters) is required' });
+    }
+
+    if (!lastName) {
+      return res.status(BAD_REQUEST).json({ success: false, message: 'Last Name is required' });
+    }
+
+    if (!gender) {
+      return res.status(BAD_REQUEST).json({ success: false, message: 'Gender is required' });
+    }
+
+    if (!dateOfBirth) {
+      return res.status(BAD_REQUEST).json({ success: false, message: 'Date of Birth is required' });
+    }
+
+    // Age Check
+    const dob = new Date(dateOfBirth);
+    const today = new Date();
+    let age = today.getFullYear() - dob.getFullYear();
+    const monthDiff = today.getMonth() - dob.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+      age--;
+    }
+    if (isNaN(age) || age < 18) {
+      return res.status(BAD_REQUEST).json({ success: false, message: 'User must be at least 18 years old' });
+    }
+
+    // Duplicate Check
+    const User = require('../models/User');
+    const existingUser = await User.findOne({ email: userEmail });
+    if (existingUser) {
+      return res.status(BAD_REQUEST).json({ success: false, message: `Email ${userEmail} is already registered` });
+    }
+
+    if (mobileNumber) {
+      const existingPhone = await UserProfile.findOne({ mobileNumber });
+      if (existingPhone) {
+        return res.status(BAD_REQUEST).json({ success: false, message: `Mobile number ${mobileNumber} is already in use` });
+      }
+    }
+
+    // Create User Account
+    const fullName = `${firstName} ${lastName}`.trim();
+    const user = await User.create({
+      name: fullName,
+      email: userEmail,
+      password,
+      role: 'user',
+      phone: mobileNumber,
     });
 
-    // Create the Profile
-    const profile = await UserProfile.create({
+    // Construct User Profile
+    const profileData = {
       userId: user._id,
-      email: user.email,
-      firstName: name.split(' ')[0],
-      lastName: name.split(' ').slice(1).join(' '),
-      mobileNumber: mobileNumber || '',
-      profileStatus: 'Active',
-      verificationStatus: 'Verified'
-    });
+      email: userEmail,
+      profileStatus,
+      verificationStatus,
+      membershipType,
+      premiumMember: Boolean(premiumMember),
+      featuredProfile: Boolean(featuredProfile),
+      blocked: Boolean(blocked),
+      adminRemarks: adminRemarks || 'Created directly by Admin',
+      createdBy: 'admin',
+      approvedBy: (profileStatus === 'Active' || verificationStatus === 'Verified') ? req.user._id : null,
+      approvedDate: (profileStatus === 'Active' || verificationStatus === 'Verified') ? new Date() : null,
 
-    return res.status(201).json({ success: true, message: 'User and Profile created', profile: safeProfile(profile) });
+      // Basic
+      profileFor: basic.profileFor || 'Self',
+      firstName,
+      lastName,
+      gender,
+      dateOfBirth: dob,
+      mobileNumber,
+      profileImage: basic.profileImage || req.body.profileImage || '',
+      coverImage: basic.coverImage || req.body.coverImage || '',
+
+      // Religious
+      religion: religious.religion || 'Christian',
+      denomination: religious.denomination || '',
+      diocese: religious.diocese || '',
+      parish: religious.parish || '',
+      church: religious.church || '',
+      baptismName: religious.baptismName || '',
+      confirmationName: religious.confirmationName || '',
+
+      // Personal
+      maritalStatus: personal.maritalStatus || '',
+      motherTongue: personal.motherTongue || '',
+      languagesKnown: Array.isArray(personal.languagesKnown) ? personal.languagesKnown : [],
+      height: personal.height || '',
+      weight: personal.weight || '',
+      complexion: personal.complexion || '',
+      bodyType: personal.bodyType || '',
+      bloodGroup: personal.bloodGroup || '',
+      physicalStatus: personal.physicalStatus || '',
+      diet: personal.diet || '',
+      smoking: personal.smoking || '',
+      drinking: personal.drinking || '',
+
+      // Education
+      highestQualification: education.highestQualification || '',
+      degree: education.degree || '',
+      specialization: education.specialization || '',
+      college: education.college || '',
+      graduationYear: education.graduationYear ? Number(education.graduationYear) : null,
+
+      // Career
+      occupation: career.occupation || '',
+      company: career.company || '',
+      designation: career.designation || '',
+      experience: career.experience || '',
+      annualIncome: career.annualIncome || '',
+      workLocation: career.workLocation || '',
+
+      // Family
+      fatherName: family.fatherName || '',
+      fatherOccupation: family.fatherOccupation || '',
+      motherName: family.motherName || '',
+      motherOccupation: family.motherOccupation || '',
+      brothers: family.brothers ? Number(family.brothers) : 0,
+      marriedBrothers: family.marriedBrothers ? Number(family.marriedBrothers) : 0,
+      sisters: family.sisters ? Number(family.sisters) : 0,
+      marriedSisters: family.marriedSisters ? Number(family.marriedSisters) : 0,
+      familyType: family.familyType || '',
+      familyStatus: family.familyStatus || '',
+      familyValues: family.familyValues || '',
+
+      // Address
+      country: address.country || 'India',
+      state: address.state || '',
+      district: address.district || '',
+      city: address.city || '',
+      nativePlace: address.nativePlace || '',
+      address: address.address || '',
+      pincode: address.pincode || '',
+
+      // Church
+      baptized: Boolean(church.baptized),
+      confirmed: Boolean(church.confirmed),
+      firstHolyCommunion: Boolean(church.firstHolyCommunion),
+      activeInChurch: Boolean(church.activeInChurch),
+      churchMinistry: church.churchMinistry || '',
+
+      // About
+      aboutMe: about.aboutMe || req.body.aboutMe || '',
+
+      // Preference
+      preferredAgeFrom: preference.preferredAgeFrom ? Number(preference.preferredAgeFrom) : null,
+      preferredAgeTo: preference.preferredAgeTo ? Number(preference.preferredAgeTo) : null,
+      preferredHeightFrom: preference.preferredHeightFrom || '',
+      preferredHeightTo: preference.preferredHeightTo || '',
+      preferredMaritalStatus: Array.isArray(preference.preferredMaritalStatus) ? preference.preferredMaritalStatus : [],
+      preferredEducation: Array.isArray(preference.preferredEducation) ? preference.preferredEducation : [],
+      preferredOccupation: Array.isArray(preference.preferredOccupation) ? preference.preferredOccupation : [],
+      preferredDenomination: Array.isArray(preference.preferredDenomination) ? preference.preferredDenomination : [],
+      preferredState: Array.isArray(preference.preferredState) ? preference.preferredState : [],
+      preferredDistrict: Array.isArray(preference.preferredDistrict) ? preference.preferredDistrict : [],
+
+      photos: Array.isArray(req.body.photos) ? req.body.photos : [],
+      documents: Array.isArray(req.body.documents) ? req.body.documents : [],
+    };
+
+    const profile = await UserProfile.create(profileData);
+
+    return res.status(CREATED).json({
+      success: true,
+      message: 'Complete Profile created successfully!',
+      profile: safeProfile(profile),
+    });
+  } catch (error) {
+    return res.status(INTERNAL_SERVER_ERROR).json({ success: false, message: error.message });
+  }
+};
+
+// ─────────────────────────────────────────────
+// PATCH /api/profile/:id/verify (admin only)
+// Update Verification / Profile Status / Block State
+// ─────────────────────────────────────────────
+const verifyProfileAdmin = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { action, verificationStatus, profileStatus, adminRemarks, blocked } = req.body;
+
+    const profile = await UserProfile.findById(id);
+    if (!profile) {
+      return res.status(NOT_FOUND).json({ success: false, message: PROFILE.NOT_FOUND });
+    }
+
+    if (action === 'approve') {
+      profile.verificationStatus = 'Verified';
+      profile.profileStatus = 'Active';
+      profile.approvedBy = req.user._id;
+      profile.approvedDate = new Date();
+    } else if (action === 'reject') {
+      profile.verificationStatus = 'Rejected';
+      profile.profileStatus = 'Rejected';
+    } else if (action === 'pending') {
+      profile.verificationStatus = 'Unverified';
+      profile.profileStatus = 'Pending';
+    } else if (action === 'block') {
+      profile.blocked = true;
+      profile.profileStatus = 'Suspended';
+    } else if (action === 'unblock') {
+      profile.blocked = false;
+      profile.profileStatus = 'Active';
+    }
+
+    if (verificationStatus) profile.verificationStatus = verificationStatus;
+    if (profileStatus) profile.profileStatus = profileStatus;
+    if (typeof blocked === 'boolean') profile.blocked = blocked;
+    if (adminRemarks !== undefined) profile.adminRemarks = adminRemarks;
+
+    if (profile.profileStatus === 'Active' || profile.verificationStatus === 'Verified') {
+      if (!profile.approvedBy) profile.approvedBy = req.user._id;
+      if (!profile.approvedDate) profile.approvedDate = new Date();
+    }
+
+    await profile.save();
+
+    return res.status(OK).json({
+      success: true,
+      message: `Profile updated: Verification = ${profile.verificationStatus}, Profile Status = ${profile.profileStatus}`,
+      profile: safeProfile(profile),
+    });
+  } catch (error) {
+    return res.status(INTERNAL_SERVER_ERROR).json({ success: false, message: error.message });
+  }
+};
+
+// ─────────────────────────────────────────────
+// POST /api/profile/:id/admin/photo
+// Admin upload profile/cover photo for specified profile
+// ─────────────────────────────────────────────
+const adminUploadPhoto = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(BAD_REQUEST).json({ success: false, message: 'No file uploaded' });
+    }
+    const profile = await UserProfile.findById(req.params.id);
+    if (!profile) return res.status(NOT_FOUND).json({ success: false, message: PROFILE.NOT_FOUND });
+
+    const photoType = req.body.type === 'cover' ? 'coverImage' : 'profileImage';
+    const photoUrl = `/uploads/${req.file.filename}`;
+    profile[photoType] = photoUrl;
+    await profile.save();
+
+    return res.status(OK).json({
+      success: true,
+      message: PROFILE.PHOTO_UPLOADED,
+      url: photoUrl,
+      profile: safeProfile(profile),
+    });
+  } catch (error) {
+    return res.status(INTERNAL_SERVER_ERROR).json({ success: false, message: error.message });
+  }
+};
+
+// ─────────────────────────────────────────────
+// POST /api/profile/:id/admin/gallery
+// Admin add gallery photo for specified profile
+// ─────────────────────────────────────────────
+const adminAddGalleryPhoto = async (req, res) => {
+  try {
+    if (!req.file) return res.status(BAD_REQUEST).json({ success: false, message: 'No file uploaded' });
+    const profile = await UserProfile.findById(req.params.id);
+    if (!profile) return res.status(NOT_FOUND).json({ success: false, message: PROFILE.NOT_FOUND });
+
+    const photoUrl = `/uploads/${req.file.filename}`;
+    profile.photos.push({ url: photoUrl, caption: req.body.caption || '' });
+    await profile.save();
+
+    return res.status(CREATED).json({
+      success: true,
+      message: PROFILE.PHOTO_UPLOADED,
+      profile: safeProfile(profile),
+    });
+  } catch (error) {
+    return res.status(INTERNAL_SERVER_ERROR).json({ success: false, message: error.message });
+  }
+};
+
+// ─────────────────────────────────────────────
+// POST /api/profile/:id/admin/documents
+// Admin upload document for specified profile
+// ─────────────────────────────────────────────
+const adminUploadDocument = async (req, res) => {
+  try {
+    if (!req.file) return res.status(BAD_REQUEST).json({ success: false, message: 'No file uploaded' });
+    const profile = await UserProfile.findById(req.params.id);
+    if (!profile) return res.status(NOT_FOUND).json({ success: false, message: PROFILE.NOT_FOUND });
+
+    const docUrl = `/uploads/${req.file.filename}`;
+    profile.documents.push({
+      type: req.body.docType || 'other',
+      label: req.body.label || 'Verification Document',
+      url: docUrl,
+    });
+    await profile.save();
+
+    return res.status(CREATED).json({
+      success: true,
+      message: PROFILE.DOC_UPLOADED,
+      profile: safeProfile(profile),
+    });
+  } catch (error) {
+    return res.status(INTERNAL_SERVER_ERROR).json({ success: false, message: error.message });
+  }
+};
+
+// ─────────────────────────────────────────────
+// DELETE /api/profile/:id/admin/documents/:docId
+// ─────────────────────────────────────────────
+const adminRemoveDocument = async (req, res) => {
+  try {
+    const profile = await UserProfile.findById(req.params.id);
+    if (!profile) return res.status(NOT_FOUND).json({ success: false, message: PROFILE.NOT_FOUND });
+
+    const docIndex = profile.documents.findIndex((d) => d._id.toString() === req.params.docId);
+    if (docIndex === -1) return res.status(NOT_FOUND).json({ success: false, message: 'Document not found' });
+
+    profile.documents.splice(docIndex, 1);
+    await profile.save();
+
+    return res.status(OK).json({ success: true, message: PROFILE.DOC_REMOVED, profile: safeProfile(profile) });
   } catch (error) {
     return res.status(INTERNAL_SERVER_ERROR).json({ success: false, message: error.message });
   }
@@ -454,5 +790,11 @@ module.exports = {
   getProfileCompletion,
   adminUpdateProfile,
   getAllProfiles,
-  createProfileAdmin,
+  createFullProfileAdmin,
+  verifyProfileAdmin,
+  adminUploadPhoto,
+  adminAddGalleryPhoto,
+  adminUploadDocument,
+  adminRemoveDocument,
 };
+
