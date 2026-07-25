@@ -1,5 +1,45 @@
-node_modules
-backend/uploads/
-*.env
-dist/
+# Dependencies
+node_modules/
+
+# Environment variables
 .env
+.env.*
+*.env
+
+# Build output
+dist/
+dist-ssr/
+build/
+
+# Backend uploads (user-generated content)
+backend/uploads/
+
+# Vite cache
+**/.vite/
+admin/.vite/
+client/.vite/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS files
+.DS_Store
+desktop.ini

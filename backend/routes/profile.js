@@ -113,14 +113,32 @@ router.delete('/me/documents/:docId', protect, removeDocument);
 // ─────────────────────────────────────────────
 // Admin routes
 // ─────────────────────────────────────────────
+const {
+  createFullProfileAdmin,
+  verifyProfileAdmin,
+  adminUploadPhoto,
+  adminAddGalleryPhoto,
+  adminUploadDocument,
+  adminRemoveDocument,
+} = require('../controllers/profileController');
 
-// GET    /api/profile/all           — all profiles (paginated)
+// GET    /api/profile/all                  — all profiles (paginated)
 router.get('/all', protect, adminOnly, getAllProfiles);
 
-// POST   /api/profile/admin/create  — create new profile from admin
-router.post('/admin/create', protect, adminOnly, createProfileAdmin);
+// POST   /api/profile/admin/create-full     — create full user profile
+router.post('/admin/create-full', protect, adminOnly, createFullProfileAdmin);
 
-// PATCH  /api/profile/:id/admin     — update any fields
+// PATCH  /api/profile/:id/admin            — update profile fields
 router.patch('/:id/admin', protect, adminOnly, adminUpdateProfile);
 
+// PATCH  /api/profile/:id/verify           — verify/approve/reject/block profile
+router.patch('/:id/verify', protect, adminOnly, verifyProfileAdmin);
+
+// Admin media endpoints for specific user profile
+router.post('/:id/admin/photo', protect, adminOnly, handleUpload(photoUpload), adminUploadPhoto);
+router.post('/:id/admin/gallery', protect, adminOnly, handleUpload(photoUpload), adminAddGalleryPhoto);
+router.post('/:id/admin/documents', protect, adminOnly, handleUpload(docUpload), adminUploadDocument);
+router.delete('/:id/admin/documents/:docId', protect, adminOnly, adminRemoveDocument);
+
 module.exports = router;
+
