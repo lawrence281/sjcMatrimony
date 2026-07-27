@@ -17,6 +17,9 @@ const {
   adminUpdateProfile,
   getAllProfiles,
   createProfileAdmin,
+  browseProfiles,
+  getPublicProfileById,
+  connectMember,
 } = require('../controllers/profileController');
 
 // ─────────────────────────────────────────────
@@ -83,7 +86,20 @@ const validateSection = (req, res, next) => {
 };
 
 // ─────────────────────────────────────────────
-// User routes (all require authentication)
+// Public / Member Search & Viewing Routes
+// ─────────────────────────────────────────────
+
+// GET    /api/profile/browse          — browse member profiles
+router.get('/browse', browseProfiles);
+
+// GET    /api/profile/member/:id      — view single public profile
+router.get('/member/:id', getPublicProfileById);
+
+// POST   /api/profile/connect/:id     — send connection interest
+router.post('/connect/:id', connectMember);
+
+// ─────────────────────────────────────────────
+// User routes (require authentication)
 // ─────────────────────────────────────────────
 
 // GET    /api/profile/me            — get own profile

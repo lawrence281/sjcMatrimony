@@ -1,31 +1,39 @@
 @import "tailwindcss";
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap');
 
 :root {
-  --primary: #0a0a1a;
-  --primary-dark: #050510;
-  --accent: #ff4d00;
-  --navy: #050510;
+  --primary: #1a273d;
+  --primary-dark: #101928;
+  --accent: #b88e4c;
+  --navy: #1a273d;
   --white: #ffffff;
-  --off-white: #fafafa;
-  --light-gray: #f2f2f2;
-  --mid-gray: #e0e0e0;
-  --image-bg: #fef9f5;
-  --text-dark: #0a0a1a;
-  --text-body: #4a4a60;
-  --text-muted: #8a8a9a;
-  --brand: #ff4d00;
-  --brand-light: #ff6a26;
-  --highlight: #ff0055;
-  --highlight-light: #fff0f5;
+  --off-white: #fbf9f5;
+  --light-gray: #f3f0e9;
+  --mid-gray: #e5e0d5;
+  --image-bg: #f9f6f0;
+  --text-dark: #1b2535;
+  --text-body: #475467;
+  --text-muted: #667085;
+  --brand: #b88e4c;
+  --brand-light: #cfa869;
+  --gold: #b88e4c;
+  --gold-hover: #a37937;
+  --gold-light: #fbf6ed;
+  --gold-border: #e6d5b8;
+  --navy-dark: #101928;
+  --cream-bg: #fbf9f5;
+  --font-serif: 'Cormorant Garamond', 'Playfair Display', Georgia, serif;
+  --font-sans: 'Inter', sans-serif;
+  --highlight: #b88e4c;
+  --highlight-light: #fbf6ed;
   --success: #10b981;
   --danger: #ef4444;
   --warning: #f59e0b;
-  --border: #eaeaea;
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0 12px 24px rgba(0, 0, 0, 0.12);
+  --border: #eae5dc;
+  --shadow-sm: 0 1px 3px rgba(16, 25, 40, 0.04);
+  --shadow: 0 4px 16px rgba(16, 25, 40, 0.06);
+  --shadow-lg: 0 12px 32px rgba(16, 25, 40, 0.1);
 }
 
 * {
@@ -5313,9 +5321,70 @@ body {
   .profile-avatar-initials { font-size: 28px; }
   .profile-display-name { font-size: 20px; }
   .profile-header-info { padding-top: 44px; }
+  
+  @media (max-width: 480px) {
+    .profile-action-bar { gap: 6px; }
+    .pab-btn { font-size: 11px; padding: 6px 10px; }
+    .pab-icon { width: 14px; height: 14px; }
+  }
 
-  .profile-action-bar { gap: 8px; }
-  .pab-btn { padding: 8px 14px; font-size: 12px; }
+  /* ─────────────────────────────────────────────
+     Grace & Covenant Responsive Rules
+     ───────────────────────────────────────────── */
+  @media (max-width: 1024px) {
+    .browse-container-grid {
+      grid-template-columns: 1fr !important;
+    }
+    .browse-cards-grid {
+      grid-template-columns: repeat(2, 1fr) !important;
+    }
+    .covenant-stories-grid {
+      grid-template-columns: 1fr !important;
+      gap: 40px !important;
+    }
+    .profile-detail-grid {
+      grid-template-columns: 1fr !important;
+      gap: 32px !important;
+    }
+    .home-matches-grid {
+      grid-template-columns: repeat(2, 1fr) !important;
+    }
+    .denominations-grid {
+      grid-template-columns: repeat(3, 1fr) !important;
+    }
+    .pricing-grid {
+      grid-template-columns: 1fr !important;
+    }
+    .footer-grid {
+      grid-template-columns: 1fr 1fr !important;
+      gap: 32px !important;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .hero-search-bar {
+      grid-template-columns: 1fr !important;
+      gap: 12px !important;
+    }
+    .browse-cards-grid {
+      grid-template-columns: 1fr !important;
+    }
+    .home-matches-grid {
+      grid-template-columns: 1fr !important;
+    }
+    .denominations-grid {
+      grid-template-columns: repeat(2, 1fr) !important;
+    }
+    .footer-grid {
+      grid-template-columns: 1fr !important;
+    }
+    .pref-grid {
+      grid-template-columns: repeat(2, 1fr) !important;
+    }
+    .navbar-mobile-toggle {
+      display: flex !important;
+    }
+  }
 
   .section-card-body { grid-template-columns: 1fr; }
   .edit-section-grid { grid-template-columns: 1fr; }

@@ -92,13 +92,6 @@ const religiousRules = [
     .isLength({ max: 100 })
     .withMessage('Diocese must be under 100 characters'),
 
-  body('parish')
-    .optional()
-    .isString()
-    .trim()
-    .isLength({ max: 100 })
-    .withMessage('Parish must be under 100 characters'),
-
   body('church')
     .optional()
     .isString()
@@ -106,19 +99,12 @@ const religiousRules = [
     .isLength({ max: 100 })
     .withMessage('Church must be under 100 characters'),
 
-  body('baptismName')
+  body('churchAddress')
     .optional()
     .isString()
     .trim()
-    .isLength({ max: 80 })
-    .withMessage('Baptism name must be under 80 characters'),
-
-  body('confirmationName')
-    .optional()
-    .isString()
-    .trim()
-    .isLength({ max: 80 })
-    .withMessage('Confirmation name must be under 80 characters'),
+    .isLength({ max: 500 })
+    .withMessage('Church address must be under 500 characters'),
 ];
 
 /**
@@ -222,10 +208,24 @@ const educationRules = [
     .isLength({ max: 150 })
     .withMessage('College name too long'),
 
+  body('university')
+    .optional()
+    .isString()
+    .trim()
+    .isLength({ max: 150 })
+    .withMessage('University name too long'),
+
   body('graduationYear')
     .optional({ nullable: true })
     .isInt({ min: 1970, max: new Date().getFullYear() })
     .withMessage(`Graduation year must be between 1970 and ${new Date().getFullYear()}`),
+
+  body('additionalCertifications')
+    .optional()
+    .isString()
+    .trim()
+    .isLength({ max: 500 })
+    .withMessage('Additional certifications too long'),
 ];
 
 /**

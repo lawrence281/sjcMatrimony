@@ -6,6 +6,8 @@ import { useAuth } from './context/AuthContext'
 import Navbar from './components/Navbar'
 import PageLoader from './components/PageLoader'
 import Home from './pages/Home'
+import BrowseMembers from './pages/BrowseMembers'
+import MemberDetail from './pages/MemberDetail'
 import Login from './pages/Login'
 import Profile from './pages/Profile'
 import EditProfile from './pages/EditProfile'
@@ -57,6 +59,8 @@ export default function App() {
           <main className="content">
             <Routes>
               <Route path="/" element={<Home />} />
+              <Route path="/browse" element={<BrowseMembers />} />
+              <Route path="/members/:id" element={<MemberDetail />} />
               <Route path="/login" element={<Login />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/safety" element={<SafetyRules />} />
@@ -74,3 +78,4 @@ export default function App() {
     </LanguageProvider>
   )
 }
+

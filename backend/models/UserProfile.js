@@ -51,10 +51,8 @@ const userProfileSchema = new mongoose.Schema(
     religion: { type: String, default: 'Christian' },
     denomination: { type: String, trim: true, default: '' },
     diocese: { type: String, trim: true, default: '' },
-    parish: { type: String, trim: true, default: '' },
     church: { type: String, trim: true, default: '' },
-    baptismName: { type: String, trim: true, default: '' },
-    confirmationName: { type: String, trim: true, default: '' },
+    churchAddress: { type: String, trim: true, default: '' },
 
     // ── 3. Personal Information ───────────────
     maritalStatus: {
@@ -107,7 +105,9 @@ const userProfileSchema = new mongoose.Schema(
     degree: { type: String, trim: true, default: '' },
     specialization: { type: String, trim: true, default: '' },
     college: { type: String, trim: true, default: '' },
+    university: { type: String, trim: true, default: '' },
     graduationYear: { type: Number, default: null },
+    additionalCertifications: { type: String, trim: true, default: '' },
 
     // ── 5. Career ─────────────────────────────
     occupation: { type: String, trim: true, default: '' },
@@ -258,7 +258,7 @@ userProfileSchema.statics.calculateCompletion = function (profile) {
   scores.basic = Math.round((basicFilled / basicFields.length) * 15);
 
   // Religion (10%) — 4 key fields
-  const religionFields = ['denomination', 'diocese', 'parish', 'church'];
+  const religionFields = ['denomination', 'diocese', 'church', 'churchAddress'];
   const religionFilled = religionFields.filter((f) => profile[f] && profile[f] !== '').length;
   scores.religion = Math.round((religionFilled / religionFields.length) * 10);
 

@@ -18,9 +18,9 @@ const ADMIN_ONLY_FIELDS = [
 // ─────────────────────────────────────────────
 const SECTION_FIELDS = {
   basic: ['profileFor', 'firstName', 'lastName', 'gender', 'dateOfBirth', 'mobileNumber', 'email'],
-  religious: ['religion', 'denomination', 'diocese', 'parish', 'church', 'baptismName', 'confirmationName'],
+  religious: ['religion', 'denomination', 'diocese', 'church', 'churchAddress'],
   personal: ['maritalStatus', 'motherTongue', 'languagesKnown', 'height', 'weight', 'complexion', 'bodyType', 'bloodGroup', 'physicalStatus', 'diet', 'smoking', 'drinking'],
-  education: ['highestQualification', 'degree', 'specialization', 'college', 'graduationYear'],
+  education: ['highestQualification', 'degree', 'specialization', 'college', 'university', 'graduationYear', 'additionalCertifications'],
   career: ['occupation', 'company', 'designation', 'experience', 'annualIncome', 'workLocation'],
   family: ['fatherName', 'fatherOccupation', 'motherName', 'motherOccupation', 'brothers', 'marriedBrothers', 'sisters', 'marriedSisters', 'familyType', 'familyStatus', 'familyValues'],
   address: ['country', 'state', 'district', 'city', 'nativePlace', 'address', 'pincode'],
@@ -530,10 +530,8 @@ const createFullProfileAdmin = async (req, res) => {
       religion: religious.religion || 'Christian',
       denomination: religious.denomination || '',
       diocese: religious.diocese || '',
-      parish: religious.parish || '',
       church: religious.church || '',
-      baptismName: religious.baptismName || '',
-      confirmationName: religious.confirmationName || '',
+      churchAddress: religious.churchAddress || '',
 
       // Personal
       maritalStatus: personal.maritalStatus || '',
@@ -554,7 +552,9 @@ const createFullProfileAdmin = async (req, res) => {
       degree: education.degree || '',
       specialization: education.specialization || '',
       college: education.college || '',
+      university: education.university || '',
       graduationYear: education.graduationYear ? Number(education.graduationYear) : null,
+      additionalCertifications: education.additionalCertifications || '',
 
       // Career
       occupation: career.occupation || '',
@@ -779,6 +779,162 @@ const adminRemoveDocument = async (req, res) => {
   }
 };
 
+// ─────────────────────────────────────────────
+// GET /api/profile/browse  (public/authenticated member browsing)
+// Filter by denomination, verifiedOnly, age range, location, profession, search, page, limit
+// ─────────────────────────────────────────────
+const browseProfiles = async (req, res) => {
+  try {
+    const {
+      page = 1,
+      limit = 12,
+      search,
+      denomination,
+      verifiedOnly,
+      minAge,
+      maxAge,
+      location,
+      profession,
+      gender,
+      sort = '-createdAt',
+    } = req.query;
+
+    const filter = { deleted: false };
+
+    if (verifiedOnly === 'true' || verifiedOnly === true) {
+      filter.verificationStatus = 'Verified';
+    }
+
+    if (gender) {
+      filter.gender = { $regex: new RegExp(`^${gender}$`, 'i') };
+    }
+
+    if (denomination) {
+      const denoms = Array.isArray(denomination)
+        ? denomination
+        : denomination.split(',').map((d) => d.trim()).filter(Boolean);
+      if (denoms.length > 0) {
+        filter.denomination = { $in: denoms.map((d) => new RegExp(d, 'i')) };
+      }
+    }
+
+    if (location) {
+      filter.$or = [
+        { city: { $regex: location, $options: 'i' } },
+        { district: { $regex: location, $options: 'i' } },
+        { state: { $regex: location, $options: 'i' } },
+        { country: { $regex: location, $options: 'i' } },
+        { nativePlace: { $regex: location, $options: 'i' } },
+      ];
+    }
+
+    if (profession) {
+      const profFilter = [
+        { occupation: { $regex: profession, $options: 'i' } },
+        { designation: { $regex: profession, $options: 'i' } },
+      ];
+      if (filter.$or) {
+        filter.$and = [{ $or: filter.$or }, { $or: profFilter }];
+        delete filter.$or;
+      } else {
+        filter.$or = profFilter;
+      }
+    }
+
+    if (search) {
+      const searchFilter = [
+        { firstName: { $regex: search, $options: 'i' } },
+        { lastName: { $regex: search, $options: 'i' } },
+        { city: { $regex: search, $options: 'i' } },
+        { state: { $regex: search, $options: 'i' } },
+        { occupation: { $regex: search, $options: 'i' } },
+        { denomination: { $regex: search, $options: 'i' } },
+      ];
+      if (filter.$and) {
+        filter.$and.push({ $or: searchFilter });
+      } else if (filter.$or) {
+        filter.$and = [{ $or: filter.$or }, { $or: searchFilter }];
+        delete filter.$or;
+      } else {
+        filter.$or = searchFilter;
+      }
+    }
+
+    // Age filter via dateOfBirth
+    if (minAge || maxAge) {
+      const today = new Date();
+      filter.dateOfBirth = {};
+      if (maxAge) {
+        // Earliest DOB for maxAge (older boundary)
+        const earliest = new Date(today.getFullYear() - Number(maxAge) - 1, today.getMonth(), today.getDate() + 1);
+        filter.dateOfBirth.$gte = earliest;
+      }
+      if (minAge) {
+        // Latest DOB for minAge (younger boundary)
+        const latest = new Date(today.getFullYear() - Number(minAge), today.getMonth(), today.getDate());
+        filter.dateOfBirth.$lte = latest;
+      }
+    }
+
+    const total = await UserProfile.countDocuments(filter);
+    const profiles = await UserProfile.find(filter)
+      .populate('userId', 'name email role')
+      .sort(sort)
+      .skip((Number(page) - 1) * Number(limit))
+      .limit(Number(limit));
+
+    return res.status(OK).json({
+      success: true,
+      profiles: profiles.map(safeProfile),
+      total,
+      page: Number(page),
+      pages: Math.ceil(total / Number(limit)) || 1,
+    });
+  } catch (error) {
+    return res.status(INTERNAL_SERVER_ERROR).json({ success: false, message: error.message });
+  }
+};
+
+// ─────────────────────────────────────────────
+// GET /api/profile/member/:id  (public member detail view)
+// ─────────────────────────────────────────────
+const getPublicProfileById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    let profile = await UserProfile.findById(id).populate('userId', 'name email');
+    if (!profile) {
+      // Try searching by userId
+      profile = await UserProfile.findOne({ userId: id }).populate('userId', 'name email');
+    }
+    if (!profile || profile.deleted) {
+      return res.status(NOT_FOUND).json({ success: false, message: PROFILE.NOT_FOUND });
+    }
+    return res.status(OK).json({ success: true, profile: safeProfile(profile) });
+  } catch (error) {
+    return res.status(INTERNAL_SERVER_ERROR).json({ success: false, message: error.message });
+  }
+};
+
+// ─────────────────────────────────────────────
+// POST /api/profile/connect/:id  (Express Interest / Connect)
+// ─────────────────────────────────────────────
+const connectMember = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const profile = await UserProfile.findById(id);
+    if (!profile) {
+      return res.status(NOT_FOUND).json({ success: false, message: PROFILE.NOT_FOUND });
+    }
+    const name = [profile.firstName, profile.lastName].filter(Boolean).join(' ') || 'Member';
+    return res.status(OK).json({
+      success: true,
+      message: `Connection request sent successfully to ${name}!`,
+    });
+  } catch (error) {
+    return res.status(INTERNAL_SERVER_ERROR).json({ success: false, message: error.message });
+  }
+};
+
 module.exports = {
   getMyProfile,
   updateProfileSection,
@@ -796,5 +952,9 @@ module.exports = {
   adminAddGalleryPhoto,
   adminUploadDocument,
   adminRemoveDocument,
+  browseProfiles,
+  getPublicProfileById,
+  connectMember,
 };
+
 

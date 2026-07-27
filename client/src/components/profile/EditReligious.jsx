@@ -3,6 +3,7 @@ import { Church } from 'lucide-react'
 import FormSection from '../form/FormSection'
 import TextField from '../form/TextField'
 import SelectField from '../form/SelectField'
+import Textarea from '../form/Textarea'
 import { updateProfileSection } from '../../services/profileService'
 import { DENOMINATIONS, DIOCESES } from '../../constants/masterData'
 import toast from 'react-hot-toast'
@@ -12,10 +13,8 @@ export default function EditReligious({ profile, onUpdate, profileId }) {
     religion: profile?.religion || 'Christian',
     denomination: profile?.denomination || '',
     diocese: profile?.diocese || '',
-    parish: profile?.parish || '',
     church: profile?.church || '',
-    baptismName: profile?.baptismName || '',
-    confirmationName: profile?.confirmationName || '',
+    churchAddress: profile?.churchAddress || '',
   })
   const [errors, setErrors] = useState({})
   const [saving, setSaving] = useState(false)
@@ -24,6 +23,12 @@ export default function EditReligious({ profile, onUpdate, profileId }) {
     setForm((f) => ({ ...f, [field]: e.target ? e.target.value : e }))
 
   const handleSave = async () => {
+    if (!form.churchAddress?.trim()) {
+      setErrors({ churchAddress: 'Church address is required' })
+      toast.error('Please enter the church address')
+      return false
+    }
+    setErrors({})
     setSaving(true)
     try {
       const res = await updateProfileSection('religious', form, profileId)
@@ -73,39 +78,29 @@ export default function EditReligious({ profile, onUpdate, profileId }) {
             placeholder="Select diocese"
           />
           <TextField
-            label="Parish"
-            name="parish"
-            value={form.parish}
-            onChange={set('parish')}
-            disabled={!editing}
-            placeholder="Your parish name"
-          />
-          <TextField
-            label="Church"
+            label="Church Name"
             name="church"
             value={form.church}
             onChange={set('church')}
             disabled={!editing}
             placeholder="Your church name"
           />
-          <TextField
-            label="Baptism Name"
-            name="baptismName"
-            value={form.baptismName}
-            onChange={set('baptismName')}
-            disabled={!editing}
-            placeholder="Saint's name at Baptism"
-          />
-          <TextField
-            label="Confirmation Name"
-            name="confirmationName"
-            value={form.confirmationName}
-            onChange={set('confirmationName')}
-            disabled={!editing}
-            placeholder="Saint's name at Confirmation"
-          />
+          <div style={{ gridColumn: '1 / -1' }}>
+            <Textarea
+              label="Church Address"
+              name="churchAddress"
+              value={form.churchAddress}
+              onChange={set('churchAddress')}
+              disabled={!editing}
+              required
+              rows={3}
+              placeholder="Full address of your church (Street, Area, City, Pin...)"
+              error={errors.churchAddress}
+            />
+          </div>
         </div>
       )}
     </FormSection>
   )
 }
+

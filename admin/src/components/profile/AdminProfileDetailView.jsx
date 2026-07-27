@@ -461,10 +461,8 @@ export default function AdminProfileDetailView({ profile, onUpdateProfile, onBac
                 { label: 'Religion', value: currentProfile.religion || 'Christian' },
                 { label: 'Denomination', value: currentProfile.denomination },
                 { label: 'Diocese', value: currentProfile.diocese },
-                { label: 'Parish', value: currentProfile.parish },
                 { label: 'Church Name', value: currentProfile.church },
-                { label: 'Baptism Name', value: currentProfile.baptismName },
-                { label: 'Confirmation Name', value: currentProfile.confirmationName },
+                { label: 'Church Address', value: currentProfile.churchAddress },
               ]}
             />
 
@@ -509,8 +507,10 @@ export default function AdminProfileDetailView({ profile, onUpdateProfile, onBac
                 { label: 'Highest Qualification', value: currentProfile.highestQualification },
                 { label: 'Degree Name', value: currentProfile.degree },
                 { label: 'Specialization', value: currentProfile.specialization },
-                { label: 'College / University', value: currentProfile.college },
+                { label: 'Institution / College', value: currentProfile.college },
+                { label: 'University', value: currentProfile.university },
                 { label: 'Graduation Year', value: currentProfile.graduationYear },
+                { label: 'Additional Certifications', value: currentProfile.additionalCertifications },
               ]}
             />
 
