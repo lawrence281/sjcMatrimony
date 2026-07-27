@@ -117,6 +117,37 @@ const updateProfileSection = async (req, res) => {
 };
 
 // ─────────────────────────────────────────────
+// PUT /api/profile/me
+// Updates all profile sections/fields in a single unified request
+// ─────────────────────────────────────────────
+const updateMyFullProfile = async (req, res) => {
+  try {
+    const updates = { ...req.body };
+    // Strip forbidden/protected fields
+    ADMIN_ONLY_FIELDS.forEach((field) => delete updates[field]);
+    delete updates._id;
+    delete updates.userId;
+    delete updates.email;
+
+    let profile = await UserProfile.findOne({ userId: req.user._id });
+    if (!profile) {
+      profile = new UserProfile({ userId: req.user._id, email: req.user.email });
+    }
+
+    Object.assign(profile, updates);
+    await profile.save();
+
+    return res.status(OK).json({
+      success: true,
+      message: 'Full profile updated successfully!',
+      profile: safeProfile(profile),
+    });
+  } catch (error) {
+    return res.status(INTERNAL_SERVER_ERROR).json({ success: false, message: error.message });
+  }
+};
+
+// ─────────────────────────────────────────────
 // POST /api/profile/me/photo
 // Upload profile photo or cover photo
 // Body: type = 'profile' | 'cover'
@@ -779,9 +810,15 @@ const adminRemoveDocument = async (req, res) => {
   }
 };
 
+const escapeRegExp = (str) => {
+  if (!str) return '';
+  return String(str).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+};
+
 // ─────────────────────────────────────────────
 // GET /api/profile/browse  (public/authenticated member browsing)
-// Filter by denomination, verifiedOnly, age range, location, profession, search, page, limit
+// Returns ONLY eligible profiles (profileStatus='Active' AND verificationStatus='Verified')
+// Filter by denomination, diocese, location, minAge, maxAge, profession, gender, maritalStatus, search
 // ─────────────────────────────────────────────
 const browseProfiles = async (req, res) => {
   try {
@@ -790,48 +827,81 @@ const browseProfiles = async (req, res) => {
       limit = 12,
       search,
       denomination,
-      verifiedOnly,
+      diocese,
+      state,
+      district,
+      city,
       minAge,
       maxAge,
       location,
       profession,
       gender,
+      maritalStatus,
       sort = '-createdAt',
     } = req.query;
 
-    const filter = { deleted: false };
+    // MANDATORY ELIGIBILITY FILTERS: Only Active & Verified, non-blocked, non-deleted profiles
+    const filter = {
+      deleted: false,
+      blocked: { $ne: true },
+      profileStatus: 'Active',
+      verificationStatus: 'Verified',
+    };
 
-    if (verifiedOnly === 'true' || verifiedOnly === true) {
-      filter.verificationStatus = 'Verified';
+    // EXCLUDE LOGGED-IN USER: A logged-in member must never see their own profile in member listings
+    if (req.user && req.user._id) {
+      filter.userId = { $ne: req.user._id };
     }
 
-    if (gender) {
-      filter.gender = { $regex: new RegExp(`^${gender}$`, 'i') };
+    if (gender && gender !== 'All') {
+      filter.gender = { $regex: new RegExp(`^${escapeRegExp(gender.trim())}$`, 'i') };
     }
 
-    if (denomination) {
+    if (maritalStatus && maritalStatus !== 'All') {
+      filter.maritalStatus = { $regex: new RegExp(`^${escapeRegExp(maritalStatus.trim())}$`, 'i') };
+    }
+
+    if (diocese && diocese !== 'All Dioceses') {
+      filter.diocese = { $regex: new RegExp(escapeRegExp(diocese.trim()), 'i') };
+    }
+
+    if (state && state !== 'All States') {
+      filter.state = { $regex: new RegExp(escapeRegExp(state.trim()), 'i') };
+    }
+
+    if (district && district !== 'All Districts') {
+      filter.district = { $regex: new RegExp(escapeRegExp(district.trim()), 'i') };
+    }
+
+    if (city && city !== 'All Cities') {
+      filter.city = { $regex: new RegExp(escapeRegExp(city.trim()), 'i') };
+    }
+
+    if (denomination && denomination !== 'All' && denomination !== 'All Churches') {
       const denoms = Array.isArray(denomination)
         ? denomination
         : denomination.split(',').map((d) => d.trim()).filter(Boolean);
       if (denoms.length > 0) {
-        filter.denomination = { $in: denoms.map((d) => new RegExp(d, 'i')) };
+        filter.denomination = { $in: denoms.map((d) => new RegExp(escapeRegExp(d), 'i')) };
       }
     }
 
-    if (location) {
+    if (location && location !== 'All Locations') {
+      const locRegex = new RegExp(escapeRegExp(location.trim()), 'i');
       filter.$or = [
-        { city: { $regex: location, $options: 'i' } },
-        { district: { $regex: location, $options: 'i' } },
-        { state: { $regex: location, $options: 'i' } },
-        { country: { $regex: location, $options: 'i' } },
-        { nativePlace: { $regex: location, $options: 'i' } },
+        { city: locRegex },
+        { district: locRegex },
+        { state: locRegex },
+        { country: locRegex },
+        { nativePlace: locRegex },
       ];
     }
 
-    if (profession) {
+    if (profession && profession !== 'All Professions') {
+      const profRegex = new RegExp(escapeRegExp(profession.trim()), 'i');
       const profFilter = [
-        { occupation: { $regex: profession, $options: 'i' } },
-        { designation: { $regex: profession, $options: 'i' } },
+        { occupation: profRegex },
+        { designation: profRegex },
       ];
       if (filter.$or) {
         filter.$and = [{ $or: filter.$or }, { $or: profFilter }];
@@ -841,14 +911,17 @@ const browseProfiles = async (req, res) => {
       }
     }
 
-    if (search) {
+    if (search && search.trim()) {
+      const sRegex = new RegExp(escapeRegExp(search.trim()), 'i');
       const searchFilter = [
-        { firstName: { $regex: search, $options: 'i' } },
-        { lastName: { $regex: search, $options: 'i' } },
-        { city: { $regex: search, $options: 'i' } },
-        { state: { $regex: search, $options: 'i' } },
-        { occupation: { $regex: search, $options: 'i' } },
-        { denomination: { $regex: search, $options: 'i' } },
+        { firstName: sRegex },
+        { lastName: sRegex },
+        { city: sRegex },
+        { state: sRegex },
+        { district: sRegex },
+        { occupation: sRegex },
+        { denomination: sRegex },
+        { diocese: sRegex },
       ];
       if (filter.$and) {
         filter.$and.push({ $or: searchFilter });
@@ -864,15 +937,16 @@ const browseProfiles = async (req, res) => {
     if (minAge || maxAge) {
       const today = new Date();
       filter.dateOfBirth = {};
-      if (maxAge) {
-        // Earliest DOB for maxAge (older boundary)
+      if (maxAge && Number(maxAge) < 60) {
         const earliest = new Date(today.getFullYear() - Number(maxAge) - 1, today.getMonth(), today.getDate() + 1);
         filter.dateOfBirth.$gte = earliest;
       }
-      if (minAge) {
-        // Latest DOB for minAge (younger boundary)
+      if (minAge && Number(minAge) > 18) {
         const latest = new Date(today.getFullYear() - Number(minAge), today.getMonth(), today.getDate());
         filter.dateOfBirth.$lte = latest;
+      }
+      if (Object.keys(filter.dateOfBirth).length === 0) {
+        delete filter.dateOfBirth;
       }
     }
 
@@ -896,6 +970,66 @@ const browseProfiles = async (req, res) => {
 };
 
 // ─────────────────────────────────────────────
+// GET /api/profile/filter-options
+// Returns distinct dioceses, states, districts, and cities from Active & Verified profiles
+// Supports filtering districts and cities dynamically by state and district
+// ─────────────────────────────────────────────
+const getFilterOptions = async (req, res) => {
+  try {
+    const { state, district } = req.query;
+
+    const baseFilter = {
+      deleted: false,
+      blocked: { $ne: true },
+      profileStatus: 'Active',
+      verificationStatus: 'Verified',
+    };
+
+    const cleanDistinct = async (field, queryFilter = baseFilter) => {
+      const raw = await UserProfile.distinct(field, queryFilter);
+      return raw
+        .filter((item) => item && typeof item === 'string' && item.trim() !== '')
+        .map((item) => item.trim())
+        .filter((v, i, a) => a.indexOf(v) === i)
+        .sort((a, b) => a.localeCompare(b));
+    };
+
+    // Filter districts by selected state
+    const districtFilter = { ...baseFilter };
+    if (state && state !== 'All States') {
+      districtFilter.state = { $regex: new RegExp(`^${state.trim()}$`, 'i') };
+    }
+
+    // Filter cities by selected state and district
+    const cityFilter = { ...districtFilter };
+    if (district && district !== 'All Districts') {
+      cityFilter.district = { $regex: new RegExp(`^${district.trim()}$`, 'i') };
+    }
+
+    const [dioceses, states, districts, cities] = await Promise.all([
+      cleanDistinct('diocese', baseFilter),
+      cleanDistinct('state', baseFilter),
+      cleanDistinct('district', districtFilter),
+      cleanDistinct('city', cityFilter),
+    ]);
+
+    const locationSet = new Set([...cities, ...districts, ...states]);
+    const locations = Array.from(locationSet).sort((a, b) => a.localeCompare(b));
+
+    return res.status(OK).json({
+      success: true,
+      dioceses,
+      states,
+      districts,
+      cities,
+      locations,
+    });
+  } catch (error) {
+    return res.status(INTERNAL_SERVER_ERROR).json({ success: false, message: error.message });
+  }
+};
+
+// ─────────────────────────────────────────────
 // GET /api/profile/member/:id  (public member detail view)
 // ─────────────────────────────────────────────
 const getPublicProfileById = async (req, res) => {
@@ -906,8 +1040,8 @@ const getPublicProfileById = async (req, res) => {
       // Try searching by userId
       profile = await UserProfile.findOne({ userId: id }).populate('userId', 'name email');
     }
-    if (!profile || profile.deleted) {
-      return res.status(NOT_FOUND).json({ success: false, message: PROFILE.NOT_FOUND });
+    if (!profile || profile.deleted || profile.blocked || profile.profileStatus !== 'Active' || profile.verificationStatus !== 'Verified') {
+      return res.status(NOT_FOUND).json({ success: false, message: 'Eligible profile not found' });
     }
     return res.status(OK).json({ success: true, profile: safeProfile(profile) });
   } catch (error) {
@@ -938,6 +1072,7 @@ const connectMember = async (req, res) => {
 module.exports = {
   getMyProfile,
   updateProfileSection,
+  updateMyFullProfile,
   uploadPhoto,
   addGalleryPhoto,
   removeGalleryPhoto,
@@ -953,6 +1088,7 @@ module.exports = {
   adminUploadDocument,
   adminRemoveDocument,
   browseProfiles,
+  getFilterOptions,
   getPublicProfileById,
   connectMember,
 };

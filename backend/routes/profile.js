@@ -2,12 +2,13 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const path = require('path');
-const { protect, adminOnly } = require('../middleware/auth');
+const { protect, optionalAuth, adminOnly } = require('../middleware/auth');
 const validate = require('../middleware/validate');
 const { sectionParam, SECTION_RULES } = require('../validators/profileValidator');
 const {
   getMyProfile,
   updateProfileSection,
+  updateMyFullProfile,
   uploadPhoto,
   addGalleryPhoto,
   removeGalleryPhoto,
@@ -18,6 +19,7 @@ const {
   getAllProfiles,
   createProfileAdmin,
   browseProfiles,
+  getFilterOptions,
   getPublicProfileById,
   connectMember,
 } = require('../controllers/profileController');
@@ -89,8 +91,11 @@ const validateSection = (req, res, next) => {
 // Public / Member Search & Viewing Routes
 // ─────────────────────────────────────────────
 
-// GET    /api/profile/browse          — browse member profiles
-router.get('/browse', browseProfiles);
+// GET    /api/profile/browse          — browse member profiles (excludes logged-in user)
+router.get('/browse', optionalAuth, browseProfiles);
+
+// GET    /api/profile/filter-options   — get dynamic dioceses & locations from DB
+router.get('/filter-options', getFilterOptions);
 
 // GET    /api/profile/member/:id      — view single public profile
 router.get('/member/:id', getPublicProfileById);
@@ -104,6 +109,9 @@ router.post('/connect/:id', connectMember);
 
 // GET    /api/profile/me            — get own profile
 router.get('/me', protect, getMyProfile);
+
+// PUT    /api/profile/me            — update full profile in single request
+router.put('/me', protect, updateMyFullProfile);
 
 // GET    /api/profile/me/completion — completion breakdown
 router.get('/me/completion', protect, getProfileCompletion);

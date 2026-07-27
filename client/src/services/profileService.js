@@ -24,6 +24,11 @@ export const updateProfileSection = (section, data, profileId = null) => {
 }
 
 /**
+ * Update full profile in a single unified form submission.
+ */
+export const updateMyFullProfile = (data) => api.put('/profile/me', data)
+
+/**
  * Upload a profile photo or cover photo.
  * @param {File}   file  - image file
  * @param {'profile'|'cover'} type

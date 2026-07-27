@@ -111,7 +111,6 @@ export default function Profile() {
               title="Basic Information"
               icon={User}
               isEmpty={isBasicEmpty}
-              onEdit={() => navigate(editUrl + '#basic')}
             >
               <SectionCard.Row label="Profile For" value={p.profileFor} />
               <SectionCard.Row label="Name" value={[p.firstName, p.lastName].filter(Boolean).join(' ')} />
@@ -127,7 +126,6 @@ export default function Profile() {
               title="Religious Information"
               icon={Church}
               isEmpty={isReligiousEmpty}
-              onEdit={() => navigate(editUrl + '#religious')}
             >
               <SectionCard.Row label="Religion" value={p.religion || 'Christian'} />
               <SectionCard.Row label="Denomination" value={p.denomination} />
@@ -141,7 +139,6 @@ export default function Profile() {
               title="Personal Information"
               icon={Heart}
               isEmpty={isPersonalEmpty}
-              onEdit={() => navigate(editUrl + '#personal')}
             >
               <SectionCard.Row label="Marital Status" value={p.maritalStatus} />
               <SectionCard.Row label="Mother Tongue" value={p.motherTongue} />
@@ -162,7 +159,6 @@ export default function Profile() {
               title="Education Qualification"
               icon={GraduationCap}
               isEmpty={isEducationEmpty}
-              onEdit={() => navigate(editUrl + '#education')}
             >
               <SectionCard.Row label="Qualification" value={p.highestQualification} />
               <SectionCard.Row label="Degree" value={p.degree} />
@@ -178,7 +174,6 @@ export default function Profile() {
               title="Career"
               icon={Briefcase}
               isEmpty={isCareerEmpty}
-              onEdit={() => navigate(editUrl + '#career')}
             >
               <SectionCard.Row label="Occupation" value={p.occupation} />
               <SectionCard.Row label="Company" value={p.company} />
@@ -193,7 +188,6 @@ export default function Profile() {
               title="Family Details"
               icon={Users}
               isEmpty={isFamilyEmpty}
-              onEdit={() => navigate(editUrl + '#family')}
             >
               <SectionCard.Row label="Father's Name" value={p.fatherName} />
               <SectionCard.Row label="Father's Occupation" value={p.fatherOccupation} />
@@ -213,7 +207,6 @@ export default function Profile() {
               title="Address"
               icon={MapPin}
               isEmpty={isAddressEmpty}
-              onEdit={() => navigate(editUrl + '#address')}
             >
               <SectionCard.Row label="Country" value={p.country} />
               <SectionCard.Row label="State" value={p.state} />
@@ -229,7 +222,6 @@ export default function Profile() {
               title="Church Information"
               icon={Church}
               isEmpty={isChurchEmpty}
-              onEdit={() => navigate(editUrl + '#church')}
             >
               <SectionCard.BoolRow label="Baptized" value={p.baptized} />
               <SectionCard.BoolRow label="Confirmed" value={p.confirmed} />
@@ -243,7 +235,6 @@ export default function Profile() {
               title="About Me"
               icon={FileText}
               isEmpty={isAboutEmpty}
-              onEdit={() => navigate(editUrl + '#about')}
             >
               <p className="about-me-display">{p.aboutMe}</p>
             </SectionCard>
@@ -253,7 +244,6 @@ export default function Profile() {
               title="Partner Preference"
               icon={Target}
               isEmpty={!p.preferredAgeFrom && !p.preferredDenomination?.length}
-              onEdit={() => navigate('/profile/preferences')}
             >
               <SectionCard.Row label="Age Range" value={p.preferredAgeFrom ? `${p.preferredAgeFrom} – ${p.preferredAgeTo || '?'} years` : null} />
               <SectionCard.Row label="Height Range" value={p.preferredHeightFrom ? `${p.preferredHeightFrom} – ${p.preferredHeightTo || '?'}` : null} />

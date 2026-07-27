@@ -1,9 +1,11 @@
+import { useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import ScrollToTop from './components/ScrollToTop'
 import { AuthProvider } from './context/AuthContext'
 import { useAuth } from './context/AuthContext'
 import Navbar from './components/Navbar'
+import Footer from './components/Footer'
 import PageLoader from './components/PageLoader'
 import Home from './pages/Home'
 import BrowseMembers from './pages/BrowseMembers'
@@ -16,8 +18,20 @@ import Gallery from './pages/Gallery'
 import Documents from './pages/Documents'
 import SafetyRules from './pages/SafetyRules'
 import Contact from './pages/Contact'
+import PrivacyPolicy from './pages/PrivacyPolicy'
+import TermsOfService from './pages/TermsOfService'
 import './index.css'
 import { LanguageProvider } from './context/LanguageContext'
+
+function ScrollToTopOnRouteChange() {
+  const { pathname } = useLocation()
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
+  }, [pathname])
+
+  return null
+}
 
 function ProtectedRoute({ children }) {
   const { user } = useAuth()
@@ -30,6 +44,7 @@ export default function App() {
     <LanguageProvider>
       <AuthProvider>
         <BrowserRouter>
+          <ScrollToTopOnRouteChange />
           <PageLoader />
           <Toaster 
             position="top-center" 
@@ -63,7 +78,11 @@ export default function App() {
               <Route path="/members/:id" element={<MemberDetail />} />
               <Route path="/login" element={<Login />} />
               <Route path="/contact" element={<Contact />} />
-              <Route path="/safety" element={<SafetyRules />} />
+              <Route path="/privacy" element={<PrivacyPolicy />} />
+              <Route path="/terms" element={<TermsOfService />} />
+              <Route path="/safety" element={<PrivacyPolicy />} />
+              <Route path="/about" element={<PrivacyPolicy />} />
+              <Route path="/subscription" element={<Home scrollToSubscription />} />
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="/profile/edit" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
               <Route path="/profile/preferences" element={<ProtectedRoute><PartnerPreference /></ProtectedRoute>} />
@@ -72,10 +91,12 @@ export default function App() {
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </main>
+          <Footer />
           <ScrollToTop />
         </BrowserRouter>
       </AuthProvider>
     </LanguageProvider>
   )
 }
+
 
