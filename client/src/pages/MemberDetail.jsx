@@ -40,22 +40,6 @@ export default function MemberDetail() {
     }
   }
 
-  const handleExpressInterest = async () => {
-    try {
-      if (profile?._id) await api.post(`/profile/connect/${profile._id}`)
-      setInterestSent(true)
-      toast.success(`Interest expressed in ${profile?.firstName || 'Member'}!`)
-    } catch (err) {
-      setInterestSent(true)
-      toast.success(`Interest expressed in ${profile?.firstName || 'Member'}!`)
-    }
-  }
-
-  const handleSendMessage = () => {
-    setMessageSent(true)
-    toast.success(`Message feature opened for ${profile?.firstName || 'Member'}!`)
-  }
-
   const handleContactRequest = () => {
     setContactRequested(true)
     toast.success(`Contact details request sent to ${profile?.firstName || 'Member'}!`)
@@ -187,76 +171,32 @@ export default function MemberDetail() {
               </div>
             )}
 
-            {/* Primary Action Buttons */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '32px' }}>
+            {/* Primary Action Button */}
+            <div style={{ marginBottom: '32px' }}>
               <button 
-                onClick={handleExpressInterest}
-                disabled={interestSent}
+                onClick={handleContactRequest}
+                disabled={contactRequested}
                 style={{
                   width: '100%',
                   padding: '14px',
                   borderRadius: '12px',
                   border: 'none',
-                  background: interestSent ? '#10B981' : '#C59B4E',
+                  background: contactRequested ? '#059669' : '#1A273D',
                   color: '#FFFFFF',
                   fontSize: '15px',
                   fontWeight: 600,
-                  cursor: interestSent ? 'default' : 'pointer',
+                  cursor: contactRequested ? 'default' : 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: '8px',
-                  boxShadow: '0 4px 16px rgba(197, 155, 78, 0.25)',
+                  boxShadow: '0 4px 16px rgba(26, 39, 61, 0.2)',
                   transition: 'all 0.2s'
                 }}
               >
-                <Heart size={18} fill="#FFFFFF" />
-                <span>{interestSent ? 'Interest Expressed' : 'Express Interest'}</span>
+                <PhoneCall size={18} />
+                <span>{contactRequested ? 'Contact Request Sent' : 'Request Contact Info'}</span>
               </button>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <button 
-                  onClick={handleSendMessage}
-                  style={{
-                    padding: '12px',
-                    borderRadius: '12px',
-                    border: 'none',
-                    background: '#1A273D',
-                    color: '#FFFFFF',
-                    fontSize: '14px',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '6px'
-                  }}
-                >
-                  <Mail size={16} />
-                  <span>Send Message</span>
-                </button>
-
-                <button 
-                  onClick={handleContactRequest}
-                  style={{
-                    padding: '12px',
-                    borderRadius: '12px',
-                    border: '1px solid #1A273D',
-                    background: '#FFFFFF',
-                    color: '#1A273D',
-                    fontSize: '14px',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '6px'
-                  }}
-                >
-                  <PhoneCall size={16} />
-                  <span>Contact Info</span>
-                </button>
-              </div>
             </div>
 
             {/* Quick Overview Card */}
