@@ -53,7 +53,7 @@ export default function Profile() {
   const breakdown = p.completionBreakdown || {}
 
   const isBasicEmpty = !p.firstName && !p.lastName
-  const isReligiousEmpty = !p.denomination && !p.diocese
+  const isReligiousEmpty = !p.denomination && !p.diocese && !p.churchAddress
   const isPersonalEmpty = !p.maritalStatus && !p.height
   const isEducationEmpty = !p.highestQualification && !p.degree
   const isCareerEmpty = !p.occupation && !p.designation
@@ -132,10 +132,8 @@ export default function Profile() {
               <SectionCard.Row label="Religion" value={p.religion || 'Christian'} />
               <SectionCard.Row label="Denomination" value={p.denomination} />
               <SectionCard.Row label="Diocese" value={p.diocese} />
-              <SectionCard.Row label="Parish" value={p.parish} />
               <SectionCard.Row label="Church" value={p.church} />
-              <SectionCard.Row label="Baptism Name" value={p.baptismName} />
-              <SectionCard.Row label="Confirmation Name" value={p.confirmationName} />
+              <SectionCard.Row label="Church Address" value={p.churchAddress} fullWidth />
             </SectionCard>
 
             {/* Personal */}
@@ -161,7 +159,7 @@ export default function Profile() {
 
             {/* Education */}
             <SectionCard
-              title="Education"
+              title="Education Qualification"
               icon={GraduationCap}
               isEmpty={isEducationEmpty}
               onEdit={() => navigate(editUrl + '#education')}
@@ -169,8 +167,10 @@ export default function Profile() {
               <SectionCard.Row label="Qualification" value={p.highestQualification} />
               <SectionCard.Row label="Degree" value={p.degree} />
               <SectionCard.Row label="Specialization" value={p.specialization} />
-              <SectionCard.Row label="College" value={p.college} />
+              <SectionCard.Row label="College / Institution" value={p.college} />
+              <SectionCard.Row label="University" value={p.university} />
               <SectionCard.Row label="Graduation Year" value={p.graduationYear} />
+              <SectionCard.Row label="Additional Certifications" value={p.additionalCertifications} fullWidth />
             </SectionCard>
 
             {/* Career */}

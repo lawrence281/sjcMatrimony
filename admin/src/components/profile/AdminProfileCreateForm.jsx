@@ -50,10 +50,8 @@ export default function AdminProfileCreateForm({ onSuccess, onCancel }) {
       religion: 'Christian',
       denomination: 'Roman Catholic',
       diocese: '',
-      parish: '',
       church: '',
-      baptismName: '',
-      confirmationName: '',
+      churchAddress: '',
     },
 
     // Personal Info
@@ -78,7 +76,9 @@ export default function AdminProfileCreateForm({ onSuccess, onCancel }) {
       degree: '',
       specialization: '',
       college: '',
+      university: '',
       graduationYear: '',
+      additionalCertifications: '',
     },
 
     // Career
@@ -530,17 +530,6 @@ export default function AdminProfileCreateForm({ onSuccess, onCancel }) {
             </div>
 
             <div className="form-group">
-              <label className="form-label">Parish / Local Parish</label>
-              <input
-                type="text"
-                className="form-input"
-                placeholder="St. Joseph Parish"
-                value={formData.religious.parish}
-                onChange={e => setSectionField('religious', 'parish', e.target.value)}
-              />
-            </div>
-
-            <div className="form-group">
               <label className="form-label">Church Name</label>
               <input
                 type="text"
@@ -551,26 +540,19 @@ export default function AdminProfileCreateForm({ onSuccess, onCancel }) {
               />
             </div>
 
-            <div className="form-group">
-              <label className="form-label">Baptism Name</label>
-              <input
-                type="text"
-                className="form-input"
-                placeholder="John Paul"
-                value={formData.religious.baptismName}
-                onChange={e => setSectionField('religious', 'baptismName', e.target.value)}
+            <div className="form-group" style={{ gridColumn: 'span 2' }}>
+              <label className="form-label">
+                Church Address <span style={{ color: 'var(--danger)', fontWeight: 'bold' }}>*</span>
+              </label>
+              <textarea
+                className="form-textarea"
+                rows={3}
+                placeholder="Complete address of the local church..."
+                value={formData.religious.churchAddress}
+                onChange={e => setSectionField('religious', 'churchAddress', e.target.value)}
+                required
               />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Confirmation Name</label>
-              <input
-                type="text"
-                className="form-input"
-                placeholder="Francis"
-                value={formData.religious.confirmationName}
-                onChange={e => setSectionField('religious', 'confirmationName', e.target.value)}
-              />
+              {errors['religious.churchAddress'] && <div style={{ color: 'var(--danger)', fontSize: 12, marginTop: 4 }}>{errors['religious.churchAddress']}</div>}
             </div>
           </div>
         </div>
@@ -704,13 +686,48 @@ export default function AdminProfileCreateForm({ onSuccess, onCancel }) {
             </div>
 
             <div className="form-group">
-              <label className="form-label">College / University Name</label>
+              <label className="form-label">Institution / College Name</label>
               <input
                 type="text"
                 className="form-input"
                 placeholder="Loyola College, Chennai"
                 value={formData.education.college}
                 onChange={e => setSectionField('education', 'college', e.target.value)}
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">University (if applicable)</label>
+              <input
+                type="text"
+                className="form-input"
+                placeholder="Anna University"
+                value={formData.education.university}
+                onChange={e => setSectionField('education', 'university', e.target.value)}
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Graduation Year</label>
+              <input
+                type="number"
+                className="form-input"
+                placeholder="2020"
+                min={1970}
+                max={new Date().getFullYear()}
+                value={formData.education.graduationYear}
+                onChange={e => setSectionField('education', 'graduationYear', e.target.value)}
+              />
+            </div>
+
+            <div className="form-group" style={{ gridColumn: 'span 2' }}>
+              <label className="form-label">Additional Certifications (Optional)</label>
+              <textarea
+                className="form-textarea"
+                rows={2}
+                placeholder="List any additional certifications, diplomas, or achievements..."
+                value={formData.education.additionalCertifications}
+                onChange={e => setSectionField('education', 'additionalCertifications', e.target.value)}
               />
             </div>
           </div>

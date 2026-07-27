@@ -3,6 +3,7 @@ import { GraduationCap } from 'lucide-react'
 import FormSection from '../form/FormSection'
 import TextField from '../form/TextField'
 import SelectField from '../form/SelectField'
+import Textarea from '../form/Textarea'
 import { updateProfileSection } from '../../services/profileService'
 import { QUALIFICATIONS } from '../../constants/masterData'
 import toast from 'react-hot-toast'
@@ -16,7 +17,9 @@ export default function EditEducation({ profile, onUpdate, profileId }) {
     degree: profile?.degree || '',
     specialization: profile?.specialization || '',
     college: profile?.college || '',
+    university: profile?.university || '',
     graduationYear: profile?.graduationYear ? String(profile.graduationYear) : '',
+    additionalCertifications: profile?.additionalCertifications || '',
   })
   const [errors, setErrors] = useState({})
   const [saving, setSaving] = useState(false)
@@ -45,7 +48,7 @@ export default function EditEducation({ profile, onUpdate, profileId }) {
 
   return (
     <FormSection
-      title="Education"
+      title="Education Qualification"
       icon={GraduationCap}
       onSave={handleSave}
       saving={saving}
@@ -80,12 +83,20 @@ export default function EditEducation({ profile, onUpdate, profileId }) {
             placeholder="e.g. Computer Science"
           />
           <TextField
-            label="College / University"
+            label="Institution / College Name"
             name="college"
             value={form.college}
             onChange={set('college')}
             disabled={!editing}
             placeholder="College name"
+          />
+          <TextField
+            label="University (if applicable)"
+            name="university"
+            value={form.university}
+            onChange={set('university')}
+            disabled={!editing}
+            placeholder="University name"
           />
           <SelectField
             label="Graduation Year"
@@ -96,8 +107,20 @@ export default function EditEducation({ profile, onUpdate, profileId }) {
             disabled={!editing}
             placeholder="Select year"
           />
+          <div style={{ gridColumn: '1 / -1' }}>
+            <Textarea
+              label="Additional Certifications (Optional)"
+              name="additionalCertifications"
+              value={form.additionalCertifications}
+              onChange={set('additionalCertifications')}
+              disabled={!editing}
+              rows={2}
+              placeholder="List any diploma, professional certifications, or honors..."
+            />
+          </div>
         </div>
       )}
     </FormSection>
   )
 }
+
