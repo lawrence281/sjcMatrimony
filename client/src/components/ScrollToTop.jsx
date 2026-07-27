@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Rocket } from 'lucide-react';
+import { Rose } from 'lucide-react';
 
 const ScrollToTop = () => {
   const [isVisible, setIsVisible] = useState(false);
@@ -26,7 +26,7 @@ const ScrollToTop = () => {
 
   return (
     <div className={`scroll-to-top ${isVisible ? 'visible' : ''}`} onClick={scrollToTop}>
-      <Rocket size={24} />
+      <Rose size={24} color="#FFFFFF" fill="#FFFFFF" />
     </div>
   );
 };

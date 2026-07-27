@@ -1,383 +1,168 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Search, ChevronLeft, ChevronRight, Check, Sparkles, Send, MapPin, Heart, Shield, ArrowRight } from 'lucide-react'
-import toast from 'react-hot-toast'
+import { Search, ChevronLeft, ChevronRight, Check, Sparkles, ShieldCheck, Church, Lock, Users, HeartHandshake, ArrowRight, UserCheck, Loader2, Rose, Heart } from 'lucide-react'
+import api from '../services/api'
 
-export default function Home() {
+export default function Home({ scrollToSubscription }) {
   const navigate = useNavigate()
 
-  // Quick Search state
-  const [searchDenomination, setSearchDenomination] = useState('All Churches')
-  const [searchAge, setSearchAge] = useState('24 - 35')
-  const [searchQuery, setSearchQuery] = useState('')
-  const [email, setEmail] = useState('')
+  const [featuredMembers, setFeaturedMembers] = useState([])
+  const [loadingMembers, setLoadingMembers] = useState(true)
 
-  const handleQuickSearch = (e) => {
-    e.preventDefault()
-    const params = new URLSearchParams()
-    if (searchDenomination !== 'All Churches') params.append('denomination', searchDenomination)
-    if (searchQuery) params.append('location', searchQuery)
-    navigate(`/browse?${params.toString()}`)
-  }
+  useEffect(() => {
+    fetchFeaturedMembers()
+  }, [])
 
-  const handleNewsletterSubmit = (e) => {
-    e.preventDefault()
-    if (email) {
-      toast.success('Thank you for subscribing to Grace & Covenant newsletter!')
-      setEmail('')
+  const fetchFeaturedMembers = async () => {
+    setLoadingMembers(true)
+    try {
+      const res = await api.get('/profile/browse?limit=4')
+      if (res.data && res.data.success) {
+        setFeaturedMembers(res.data.profiles || [])
+      }
+    } catch (err) {
+      console.error('Failed to load featured members:', err)
+      setFeaturedMembers([])
+    } finally {
+      setLoadingMembers(false)
     }
   }
+
+  useEffect(() => {
+    if (scrollToSubscription || window.location.hash === '#subscription') {
+      const el = document.getElementById('subscription')
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth' })
+      }
+    }
+  }, [scrollToSubscription])
 
   return (
     <div style={{ background: '#FAF8F5', fontFamily: "'Inter', sans-serif" }}>
 
-      {/* HERO SECTION */}
+      {/* HERO SECTION WITH FLOATING HEARTS ANIMATION */}
       <section style={{
         position: 'relative',
-        minHeight: '620px',
+        minHeight: '580px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundImage: `linear-gradient(180deg, rgba(16, 25, 40, 0.45) 0%, rgba(16, 25, 40, 0.65) 100%), url('https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1600&q=80')`,
+        backgroundImage: `linear-gradient(180deg, rgba(16, 25, 40, 0.5) 0%, rgba(16, 25, 40, 0.7) 100%), url('https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1600&q=80')`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
-        padding: '80px 24px 120px 24px'
+        padding: '80px 24px 100px 24px',
+        overflow: 'hidden'
       }}>
-        <div style={{ maxWidth: '900px', margin: '0 auto', textAlign: 'center', color: '#FFFFFF' }}>
+        {/* Floating Hearts (Bottom to Top) & Roses (Rise and Fall) Container */}
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          overflow: 'hidden',
+          pointerEvents: 'none',
+          zIndex: 1
+        }}>
+          {[
+            { left: '3%', type: 'rose', size: 26, duration: 8.2, delay: 0, opacity: 0.85, color: '#F43F5E' },
+            { left: '8%', type: 'heart', size: 24, duration: 6.8, delay: 1.5, opacity: 0.8, color: '#E2B96D' },
+            { left: '15%', type: 'rose', size: 28, duration: 9.0, delay: 3.2, opacity: 0.9, color: '#FB7185' },
+            { left: '22%', type: 'heart', size: 22, duration: 7.4, delay: 0.8, opacity: 0.75, color: '#F472B6' },
+            { left: '30%', type: 'rose', size: 24, duration: 8.5, delay: 4.2, opacity: 0.8, color: '#E2B96D' },
+            
+            { right: '3%', type: 'heart', size: 26, duration: 7.0, delay: 0.4, opacity: 0.85, color: '#F43F5E' },
+            { right: '9%', type: 'rose', size: 30, duration: 8.8, delay: 2.2, opacity: 0.9, color: '#EC4899' },
+            { right: '16%', type: 'heart', size: 20, duration: 6.5, delay: 3.8, opacity: 0.75, color: '#E2B96D' },
+            { right: '23%', type: 'rose', size: 26, duration: 9.2, delay: 1.2, opacity: 0.85, color: '#FB7185' },
+            { right: '31%', type: 'heart', size: 28, duration: 7.8, delay: 5.0, opacity: 0.8, color: '#F43F5E' },
+          ].map((p, idx) => (
+            <div
+              key={idx}
+              style={{
+                position: 'absolute',
+                bottom: '-40px',
+                left: p.left,
+                right: p.right,
+                animation: `${p.type === 'rose' ? 'riseAndFallRose' : 'floatHeroHeart'} ${p.duration}s ease-in-out ${p.delay}s infinite`,
+                opacity: p.opacity,
+                filter: `drop-shadow(0 2px 8px ${p.color}66)`,
+                willChange: 'transform, opacity'
+              }}
+            >
+              {p.type === 'rose' ? (
+                <Rose size={p.size} color={p.color} fill={p.color} />
+              ) : (
+                <Heart size={p.size} color={p.color} fill={p.color} />
+              )}
+            </div>
+          ))}
+        </div>
+
+        <div style={{ maxWidth: '960px', margin: '0 auto', textAlign: 'center', color: '#FFFFFF', position: 'relative', zIndex: 2 }}>
           
+          <div style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            background: 'rgba(255, 255, 255, 0.15)',
+            backdropFilter: 'blur(10px)',
+            padding: '6px 18px',
+            borderRadius: '20px',
+            marginBottom: '20px',
+            fontSize: '13px',
+            fontWeight: 600,
+            letterSpacing: '0.04em',
+            textTransform: 'uppercase',
+            color: '#FBF6ED',
+            border: '1px solid rgba(255, 255, 255, 0.25)'
+          }}>
+            <Sparkles size={14} color="#C59B4E" fill="#C59B4E" />
+            <span>SJC Matrimony Portal</span>
+          </div>
+
           <h1 style={{
             fontFamily: "'Cormorant Garamond', serif",
-            fontSize: '56px',
+            fontSize: '58px',
             fontWeight: 700,
             lineHeight: 1.15,
             letterSpacing: '-0.02em',
-            marginBottom: '16px',
+            marginBottom: '20px',
             textShadow: '0 2px 10px rgba(0,0,0,0.3)'
           }}>
-            Sacred Unions.<br />Faithfully Found.
+            Sacred Catholic & Christian Unions.<br />Faithfully Found.
           </h1>
 
           <p style={{
             fontSize: '16px',
-            lineHeight: 1.6,
-            maxWidth: '680px',
+            lineHeight: 1.65,
+            maxWidth: '700px',
             margin: '0 auto 40px auto',
             opacity: 0.95,
             fontWeight: 400,
             textShadow: '0 1px 4px rgba(0,0,0,0.3)'
           }}>
-            The premier community for Christian matrimony and intentional connections. Shared faith is the foundation of every lasting relationship.
+            SJC Matrimony provides a trusted, verified space for single Christians seeking intentional, faith-centered matrimony built on shared values and divine purpose.
           </p>
 
-          {/* Quick Search Bar Overlaid */}
-          <form 
-            onSubmit={handleQuickSearch}
-            style={{
-              background: 'rgba(255, 255, 255, 0.95)',
-              backdropFilter: 'blur(16px)',
-              borderRadius: '16px',
-              padding: '12px 16px',
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr 1fr auto',
-              gap: '12px',
-              alignItems: 'center',
-              boxShadow: '0 12px 40px rgba(0,0,0,0.25)',
-              maxWidth: '840px',
-              margin: '0 auto'
-            }}
-            className="hero-search-bar"
-          >
-            {/* Denomination Select */}
-            <div style={{ textAlign: 'left', padding: '0 8px' }}>
-              <span style={{ fontSize: '11px', fontWeight: 600, color: '#8A92A0', textTransform: 'uppercase', display: 'block', marginBottom: '2px' }}>
-                Denomination
-              </span>
-              <select 
-                value={searchDenomination}
-                onChange={e => setSearchDenomination(e.target.value)}
-                style={{
-                  width: '100%',
-                  background: 'none',
-                  border: 'none',
-                  fontSize: '14px',
-                  fontWeight: 600,
-                  color: '#1B2535',
-                  outline: 'none',
-                  cursor: 'pointer'
-                }}
-              >
-                <option value="All Churches">All Churches</option>
-                <option value="Catholic">Catholic</option>
-                <option value="Orthodox">Orthodox</option>
-                <option value="Protestant">Protestant</option>
-                <option value="Anglican">Anglican</option>
-              </select>
-            </div>
-
-            {/* Age Range Select */}
-            <div style={{ textAlign: 'left', padding: '0 8px', borderLeft: '1px solid #EAE5DC' }}>
-              <span style={{ fontSize: '11px', fontWeight: 600, color: '#8A92A0', textTransform: 'uppercase', display: 'block', marginBottom: '2px' }}>
-                Age
-              </span>
-              <select 
-                value={searchAge}
-                onChange={e => setSearchAge(e.target.value)}
-                style={{
-                  width: '100%',
-                  background: 'none',
-                  border: 'none',
-                  fontSize: '14px',
-                  fontWeight: 600,
-                  color: '#1B2535',
-                  outline: 'none',
-                  cursor: 'pointer'
-                }}
-              >
-                <option value="20 - 30">20 - 30</option>
-                <option value="24 - 35">24 - 35</option>
-                <option value="30 - 45">30 - 45</option>
-                <option value="40+">40+</option>
-              </select>
-            </div>
-
-            {/* Location / Profession Input */}
-            <div style={{ textAlign: 'left', padding: '0 8px', borderLeft: '1px solid #EAE5DC' }}>
-              <span style={{ fontSize: '11px', fontWeight: 600, color: '#8A92A0', textTransform: 'uppercase', display: 'block', marginBottom: '2px' }}>
-                Location / Profession
-              </span>
-              <input 
-                type="text"
-                placeholder="Any Location"
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                style={{
-                  width: '100%',
-                  background: 'none',
-                  border: 'none',
-                  fontSize: '14px',
-                  fontWeight: 600,
-                  color: '#1B2535',
-                  outline: 'none'
-                }}
-              />
-            </div>
-
-            {/* Search Submit Button */}
-            <button 
-              type="submit"
-              style={{
-                background: '#C59B4E',
-                color: '#FFFFFF',
-                border: 'none',
-                borderRadius: '12px',
-                padding: '12px 24px',
-                fontSize: '14px',
-                fontWeight: 600,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                transition: 'background 0.2s, transform 0.2s',
-                boxShadow: '0 4px 12px rgba(197, 155, 78, 0.3)'
-              }}
-            >
-              <Search size={16} />
-              <span>Search</span>
-            </button>
-          </form>
-
-        </div>
-      </section>
-
-
-      {/* SECTION 1: GRACE-FILLED MATCHES */}
-      <section style={{ padding: '80px 24px', maxWidth: '1240px', margin: '0 auto' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '32px' }}>
-          <div>
-            <h2 style={{
-              fontFamily: "'Cormorant Garamond', serif",
-              fontSize: '36px',
-              fontWeight: 700,
-              color: '#1B2535',
-              margin: 0
-            }}>
-              Grace-Filled Matches
-            </h2>
-            <p style={{ fontSize: '14px', color: '#667085', margin: '4px 0 0 0' }}>
-              Hand-selected profiles based on your faith, values, and location.
-            </p>
-          </div>
-
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <button 
-              style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '50%',
-                border: '1px solid #EAE5DC',
-                background: '#FFFFFF',
-                display: 'grid',
-                placeItems: 'center',
-                cursor: 'pointer'
-              }}
-            >
-              <ChevronLeft size={20} color="#1B2535" />
-            </button>
-            <button 
-              style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '50%',
-                border: '1px solid #EAE5DC',
-                background: '#FFFFFF',
-                display: 'grid',
-                placeItems: 'center',
-                cursor: 'pointer'
-              }}
-            >
-              <ChevronRight size={20} color="#1B2535" />
-            </button>
-          </div>
-        </div>
-
-        {/* Matches Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '24px' }} className="home-matches-grid">
-          {[
-            { id: 'clara', name: 'Clara, 28', location: 'Paris, France', tag: 'Catholic', image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=800&q=80' },
-            { id: 'samuel', name: 'Samuel, 32', location: 'London, UK', tag: 'Protestant', image: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=800&q=80' },
-            { id: 'elena', name: 'Elena, 31', location: 'Milan, Italy', tag: 'Orthodox', image: 'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=800&q=80' },
-            { id: 'james', name: 'James, 29', location: 'New York, USA', tag: 'Baptist', image: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=800&q=80' },
-          ].map((item, idx) => (
-            <div 
-              key={idx}
-              onClick={() => navigate(`/browse`)}
-              style={{
-                background: '#FFFFFF',
-                border: '1px solid #EFEBE4',
-                borderRadius: '16px',
-                overflow: 'hidden',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                boxShadow: '0 4px 16px rgba(0,0,0,0.03)'
-              }}
-            >
-              <div style={{ position: 'relative', height: '260px' }}>
-                <img src={item.image} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                <span style={{
-                  position: 'absolute',
-                  bottom: '12px',
-                  left: '12px',
-                  background: '#1A273D',
-                  color: '#FFFFFF',
-                  fontSize: '11px',
-                  fontWeight: 600,
-                  padding: '3px 10px',
-                  borderRadius: '12px'
-                }}>
-                  {item.tag}
-                </span>
-              </div>
-              <div style={{ padding: '16px', textAlign: 'center' }}>
-                <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '20px', fontWeight: 700, color: '#1B2535', margin: 0 }}>
-                  {item.name}
-                </h3>
-                <p style={{ fontSize: '13px', color: '#667085', margin: '4px 0 12px 0' }}>
-                  {item.location}
-                </p>
-                <button style={{
-                  width: '100%',
-                  padding: '8px',
-                  borderRadius: '8px',
-                  border: '1px solid #D6C7AF',
-                  background: '#FFFFFF',
-                  color: '#C59B4E',
-                  fontSize: '13px',
-                  fontWeight: 600,
-                  cursor: 'pointer'
-                }}>
-                  View Profile
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-
-      {/* SECTION 2: OUR COVENANT STORIES */}
-      <section id="success-stories" style={{ background: '#1A273D', color: '#FFFFFF', padding: '80px 24px' }}>
-        <div style={{ maxWidth: '1160px', margin: '0 auto', display: 'grid', gridTemplateColumns: '460px 1fr', gap: '64px', alignItems: 'center' }} className="covenant-stories-grid">
-          
-          {/* Couple Image with Double Gold Frame */}
-          <div style={{ position: 'relative' }}>
-            <div style={{
-              position: 'absolute',
-              inset: '-12px',
-              border: '1px solid #C59B4E',
-              borderRadius: '20px',
-              opacity: 0.6
-            }} />
-            <div style={{
-              borderRadius: '16px',
-              overflow: 'hidden',
-              boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
-              position: 'relative'
-            }}>
-              <img 
-                src="https://images.unsplash.com/photo-1583939003579-730e3918a45a?auto=format&fit=crop&w=800&q=80" 
-                alt="Sarah & David"
-                style={{ width: '100%', height: '420px', objectFit: 'cover', display: 'block' }}
-              />
-            </div>
-          </div>
-
-          {/* Testimonial Quote */}
-          <div>
-            <div style={{ width: '40px', height: '2px', background: '#C59B4E', marginBottom: '24px' }} />
-
-            <h2 style={{
-              fontFamily: "'Cormorant Garamond', serif",
-              fontSize: '38px',
-              fontWeight: 700,
-              lineHeight: 1.2,
-              marginBottom: '24px'
-            }}>
-              Our Covenant Stories
-            </h2>
-
-            <blockquote style={{
-              fontFamily: "'Cormorant Garamond', serif",
-              fontSize: '24px',
-              fontStyle: 'italic',
-              lineHeight: 1.5,
-              color: '#FBF6ED',
-              margin: '0 0 24px 0',
-              opacity: 0.95
-            }}>
-              "Finding a partner who truly understood my devotion to the church was my primary prayer. Grace & Covenant didn't just give me matches; it introduced me to my soul's mirror. We are now six months into our blessed marriage."
-            </blockquote>
-
-            <p style={{ fontSize: '13px', fontWeight: 600, letterSpacing: '0.05em', color: '#C59B4E', textTransform: 'uppercase', marginBottom: '32px' }}>
-              — SARAH & DAVID, MARRIED OCTOBER 2023
-            </p>
-
+          {/* Explore Members CTA Button */}
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', flexWrap: 'wrap' }}>
             <Link 
-              to="/browse" 
+              to="/browse"
               style={{
+                background: 'linear-gradient(135deg, #C59B4E 0%, #E2B96D 100%)',
                 color: '#FFFFFF',
-                fontSize: '13px',
+                padding: '16px 36px',
+                borderRadius: '30px',
+                fontSize: '16px',
                 fontWeight: 700,
-                letterSpacing: '0.08em',
                 textDecoration: 'none',
+                boxShadow: '0 8px 24px rgba(197, 155, 78, 0.4)',
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '8px',
-                borderBottom: '1px solid rgba(255,255,255,0.4)',
-                paddingBottom: '4px'
+                gap: '10px',
+                transition: 'transform 0.2s, box-shadow 0.2s'
               }}
             >
-              <span>READ MORE SUCCESS STORIES</span>
-              <ArrowRight size={14} />
+              <span>Explore Verified Members</span>
+              <ArrowRight size={18} />
             </Link>
           </div>
 
@@ -385,78 +170,414 @@ export default function Home() {
       </section>
 
 
-      {/* SECTION 3: UNITY IN FAITH */}
-      <section id="denominations" style={{ padding: '80px 24px', maxWidth: '1160px', margin: '0 auto', textAlign: 'center' }}>
-        <h2 style={{
-          fontFamily: "'Cormorant Garamond', serif",
-          fontSize: '36px',
-          fontWeight: 700,
-          color: '#1B2535',
-          margin: 0
-        }}>
-          Unity in Faith
-        </h2>
-        <p style={{ fontSize: '14px', color: '#667085', margin: '8px 0 40px 0' }}>
-          Connecting believers across diverse Christian traditions.
-        </p>
+      {/* SECTION 1: FEATURED VERIFIED MEMBERS (FETCHED FROM DB) */}
+      <section style={{ padding: '80px 24px', maxWidth: '1240px', margin: '0 auto' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '36px' }}>
+          <div>
+            <h2 style={{
+              fontFamily: "'Cormorant Garamond', serif",
+              fontSize: '38px',
+              fontWeight: 700,
+              color: '#1B2535',
+              margin: 0
+            }}>
+              Verified Member Profiles
+            </h2>
+            <p style={{ fontSize: '14px', color: '#667085', margin: '6px 0 0 0' }}>
+              Authentic profiles verified through parish background and identity checks.
+            </p>
+          </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '16px' }} className="denominations-grid">
-          {[
-            { title: 'Catholic', icon: '⛪' },
-            { title: 'Orthodox', icon: '☦️' },
-            { title: 'Protestant', icon: '✨' },
-            { title: 'Anglican', icon: '🏛️' },
-            { title: 'Baptist', icon: '✝️' },
-            { title: 'All Christian', icon: '🕊️' },
-          ].map((denom, i) => (
-            <div 
-              key={i}
-              onClick={() => navigate(`/browse?denomination=${encodeURIComponent(denom.title)}`)}
-              style={{
-                background: '#FFFFFF',
-                border: '1px solid #EFEBE4',
-                borderRadius: '16px',
-                padding: '24px 16px',
-                cursor: 'pointer',
-                transition: 'all 0.2s'
-              }}
-              onMouseOver={e => {
-                e.currentTarget.style.transform = 'translateY(-4px)'
-                e.currentTarget.style.borderColor = '#C59B4E'
-              }}
-              onMouseOut={e => {
-                e.currentTarget.style.transform = 'none'
-                e.currentTarget.style.borderColor = '#EFEBE4'
-              }}
-            >
-              <div style={{ fontSize: '28px', marginBottom: '8px' }}>{denom.icon}</div>
-              <span style={{ fontSize: '13px', fontWeight: 600, color: '#1B2535' }}>{denom.title}</span>
+          <Link 
+            to="/browse"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              fontSize: '14px',
+              fontWeight: 600,
+              color: '#B88E4C',
+              textDecoration: 'none'
+            }}
+          >
+            <span>Browse All Members</span>
+            <ArrowRight size={16} />
+          </Link>
+        </div>
+
+        {/* Matches Grid */}
+        {loadingMembers ? (
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '60px 0' }}>
+            <Loader2 size={36} color="#B88E4C" className="animate-spin" />
+          </div>
+        ) : featuredMembers.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '40px', background: '#FFFFFF', borderRadius: '16px', border: '1px solid #EFEBE4' }}>
+            <p style={{ color: '#667085', fontSize: '14px' }}>No verified member profiles available at the moment.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 home-matches-grid">
+            {featuredMembers.map((member) => (
+              <div 
+                key={member._id}
+                onClick={() => navigate(`/members/${member._id}`)}
+                style={{
+                  background: '#FFFFFF',
+                  border: '1px solid #EFEBE4',
+                  borderRadius: '16px',
+                  overflow: 'hidden',
+                  cursor: 'pointer',
+                  transition: 'all 0.25s ease-in-out',
+                  boxShadow: '0 4px 16px rgba(0,0,0,0.03)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between'
+                }}
+                onMouseOver={e => {
+                  e.currentTarget.style.transform = 'translateY(-4px)'
+                  e.currentTarget.style.boxShadow = '0 12px 28px rgba(0,0,0,0.08)'
+                }}
+                onMouseOut={e => {
+                  e.currentTarget.style.transform = 'none'
+                  e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.03)'
+                }}
+              >
+                <div style={{ position: 'relative', height: '260px', background: '#F3F0E9' }}>
+                  <img 
+                    src={member.profileImage || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80'} 
+                    alt={`${member.firstName} ${member.lastName}`} 
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    onError={(e) => {
+                      e.target.onerror = null
+                      e.target.src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80'
+                    }}
+                  />
+                  {member.denomination && (
+                    <span style={{
+                      position: 'absolute',
+                      bottom: '12px',
+                      left: '12px',
+                      background: '#1A273D',
+                      color: '#FFFFFF',
+                      fontSize: '11px',
+                      fontWeight: 600,
+                      padding: '4px 10px',
+                      borderRadius: '12px',
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.2)'
+                    }}>
+                      {member.denomination}
+                    </span>
+                  )}
+                </div>
+                <div style={{ padding: '16px', textAlign: 'center' }}>
+                  <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '20px', fontWeight: 700, color: '#1B2535', margin: 0 }}>
+                    {member.firstName} {member.lastName ? `${member.lastName.charAt(0)}.` : ''}, {member.age || '—'}
+                  </h3>
+                  <p style={{ fontSize: '13px', color: '#667085', margin: '4px 0 14px 0' }}>
+                    {[member.city, member.state].filter(Boolean).join(', ') || 'Tamil Nadu, India'}
+                  </p>
+                  <button style={{
+                    width: '100%',
+                    padding: '9px',
+                    borderRadius: '10px',
+                    border: '1px solid #D6C7AF',
+                    background: '#FFFFFF',
+                    color: '#C59B4E',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}>
+                    View Profile
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+
+      {/* NEW REPLACEMENT SECTION 1: WHY CHOOSE SJC MATRIMONY */}
+      <section style={{ background: '#1A273D', color: '#FFFFFF', padding: '80px 24px' }}>
+        <div style={{ maxWidth: '1240px', margin: '0 auto', textAlign: 'center' }}>
+          
+          <div style={{ width: '40px', height: '2px', background: '#C59B4E', margin: '0 auto 20px auto' }} />
+
+          <h2 style={{
+            fontFamily: "'Cormorant Garamond', serif",
+            fontSize: '40px',
+            fontWeight: 700,
+            lineHeight: 1.2,
+            marginBottom: '12px',
+            color: '#FFFFFF'
+          }}>
+            Why Choose SJC Matrimony?
+          </h2>
+
+          <p style={{ fontSize: '15px', color: '#94A3B8', maxWidth: '640px', margin: '0 auto 56px auto', lineHeight: 1.6 }}>
+            Designed exclusively for single Christians who value spiritual commitment, authenticity, and lifelong matrimonial covenant.
+          </p>
+
+          <div className="why-sjc-grid mobile-horizontal-scroll">
+            
+            {/* Feature 1 */}
+            <div style={{
+              background: 'rgba(255, 255, 255, 0.05)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: '20px',
+              padding: '32px 24px',
+              textAlign: 'left',
+              transition: 'transform 0.25s, border-color 0.25s'
+            }}>
+              <div style={{
+                width: '48px',
+                height: '48px',
+                borderRadius: '14px',
+                background: 'rgba(197, 155, 78, 0.15)',
+                display: 'grid',
+                placeItems: 'center',
+                marginBottom: '20px',
+                color: '#C59B4E'
+              }}>
+                <UserCheck size={24} />
+              </div>
+              <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '22px', fontWeight: 700, marginBottom: '10px', color: '#FFFFFF' }}>
+                100% Verified Profiles
+              </h3>
+              <p style={{ fontSize: '13.5px', color: '#94A3B8', lineHeight: 1.6, margin: 0 }}>
+                Every profile undergoes rigorous identity and church background verification for a safe matrimonial experience.
+              </p>
             </div>
-          ))}
+
+            {/* Feature 2 */}
+            <div style={{
+              background: 'rgba(255, 255, 255, 0.05)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: '20px',
+              padding: '32px 24px',
+              textAlign: 'left',
+              transition: 'transform 0.25s, border-color 0.25s'
+            }}>
+              <div style={{
+                width: '48px',
+                height: '48px',
+                borderRadius: '14px',
+                background: 'rgba(197, 155, 78, 0.15)',
+                display: 'grid',
+                placeItems: 'center',
+                marginBottom: '20px',
+                color: '#C59B4E'
+              }}>
+                <Church size={24} />
+              </div>
+              <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '22px', fontWeight: 700, marginBottom: '10px', color: '#FFFFFF' }}>
+                Faith-Centered Values
+              </h3>
+              <p style={{ fontSize: '13.5px', color: '#94A3B8', lineHeight: 1.6, margin: 0 }}>
+                Built on Christian principles, connecting individuals with shared spiritual goals, traditions, and moral values.
+              </p>
+            </div>
+
+            {/* Feature 3 */}
+            <div style={{
+              background: 'rgba(255, 255, 255, 0.05)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: '20px',
+              padding: '32px 24px',
+              textAlign: 'left',
+              transition: 'transform 0.25s, border-color 0.25s'
+            }}>
+              <div style={{
+                width: '48px',
+                height: '48px',
+                borderRadius: '14px',
+                background: 'rgba(197, 155, 78, 0.15)',
+                display: 'grid',
+                placeItems: 'center',
+                marginBottom: '20px',
+                color: '#C59B4E'
+              }}>
+                <Lock size={24} />
+              </div>
+              <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '22px', fontWeight: 700, marginBottom: '10px', color: '#FFFFFF' }}>
+                Strict Privacy Controls
+              </h3>
+              <p style={{ fontSize: '13.5px', color: '#94A3B8', lineHeight: 1.6, margin: 0 }}>
+                You have full authority over your contact details, photo visibility, and document sharing settings.
+              </p>
+            </div>
+
+            {/* Feature 4 */}
+            <div style={{
+              background: 'rgba(255, 255, 255, 0.05)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: '20px',
+              padding: '32px 24px',
+              textAlign: 'left',
+              transition: 'transform 0.25s, border-color 0.25s'
+            }}>
+              <div style={{
+                width: '48px',
+                height: '48px',
+                borderRadius: '14px',
+                background: 'rgba(197, 155, 78, 0.15)',
+                display: 'grid',
+                placeItems: 'center',
+                marginBottom: '20px',
+                color: '#C59B4E'
+              }}>
+                <HeartHandshake size={24} />
+              </div>
+              <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '22px', fontWeight: 700, marginBottom: '10px', color: '#FFFFFF' }}>
+                Tailored Matchmaking
+              </h3>
+              <p style={{ fontSize: '13.5px', color: '#94A3B8', lineHeight: 1.6, margin: 0 }}>
+                Filter matches precisely by denomination, diocese, church location, education, career, and lifestyle preferences.
+              </p>
+            </div>
+
+          </div>
         </div>
       </section>
 
 
-      {/* SECTION 4: MEMBERSHIP TIERS */}
-      <section style={{ padding: '80px 24px', background: '#F8F6F0', borderTop: '1px solid #EAE5DC' }}>
+      {/* NEW REPLACEMENT SECTION 2: HOW IT WORKS */}
+      <section style={{ padding: '80px 24px', maxWidth: '1240px', margin: '0 auto', textAlign: 'center' }}>
+        <h2 style={{
+          fontFamily: "'Cormorant Garamond', serif",
+          fontSize: '38px',
+          fontWeight: 700,
+          color: '#1B2535',
+          margin: 0
+        }}>
+          How SJC Matrimony Works
+        </h2>
+        <p style={{ fontSize: '14px', color: '#667085', margin: '8px 0 52px 0' }}>
+          Three simple steps to finding your lifelong partner in faith.
+        </p>
+
+        <div className="how-it-works-grid mobile-horizontal-scroll" style={{ position: 'relative' }}>
+          
+          {/* Step 1 */}
+          <div style={{
+            background: '#FFFFFF',
+            border: '1px solid #EFEBE4',
+            borderRadius: '20px',
+            padding: '40px 28px',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.02)',
+            textAlign: 'center'
+          }}>
+            <div style={{
+              width: '54px',
+              height: '54px',
+              borderRadius: '50%',
+              background: '#1A273D',
+              color: '#FFFFFF',
+              fontSize: '20px',
+              fontWeight: 700,
+              display: 'grid',
+              placeItems: 'center',
+              margin: '0 auto 24px auto',
+              boxShadow: '0 4px 14px rgba(26, 39, 61, 0.2)'
+            }}>
+              1
+            </div>
+            <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '24px', fontWeight: 700, color: '#1B2535', marginBottom: '12px' }}>
+              Create Your Profile
+            </h3>
+            <p style={{ fontSize: '14px', color: '#667085', lineHeight: 1.6, margin: 0 }}>
+              Register your profile with complete basic, education, career, and church details for verification.
+            </p>
+          </div>
+
+          {/* Step 2 */}
+          <div style={{
+            background: '#FFFFFF',
+            border: '1px solid #EFEBE4',
+            borderRadius: '20px',
+            padding: '40px 28px',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.02)',
+            textAlign: 'center'
+          }}>
+            <div style={{
+              width: '54px',
+              height: '54px',
+              borderRadius: '50%',
+              background: '#C59B4E',
+              color: '#FFFFFF',
+              fontSize: '20px',
+              fontWeight: 700,
+              display: 'grid',
+              placeItems: 'center',
+              margin: '0 auto 24px auto',
+              boxShadow: '0 4px 14px rgba(197, 155, 78, 0.25)'
+            }}>
+              2
+            </div>
+            <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '24px', fontWeight: 700, color: '#1B2535', marginBottom: '12px' }}>
+              Browse & Connect
+            </h3>
+            <p style={{ fontSize: '14px', color: '#667085', lineHeight: 1.6, margin: 0 }}>
+              Explore compatible verified member profiles and send interest or connection requests seamlessly.
+            </p>
+          </div>
+
+          {/* Step 3 */}
+          <div style={{
+            background: '#FFFFFF',
+            border: '1px solid #EFEBE4',
+            borderRadius: '20px',
+            padding: '40px 28px',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.02)',
+            textAlign: 'center'
+          }}>
+            <div style={{
+              width: '54px',
+              height: '54px',
+              borderRadius: '50%',
+              background: '#1A273D',
+              color: '#FFFFFF',
+              fontSize: '20px',
+              fontWeight: 700,
+              display: 'grid',
+              placeItems: 'center',
+              margin: '0 auto 24px auto',
+              boxShadow: '0 4px 14px rgba(26, 39, 61, 0.2)'
+            }}>
+              3
+            </div>
+            <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '24px', fontWeight: 700, color: '#1B2535', marginBottom: '12px' }}>
+              Begin Sacred Union
+            </h3>
+            <p style={{ fontSize: '14px', color: '#667085', lineHeight: 1.6, margin: 0 }}>
+              Commence meaningful family interactions guided by shared Christian faith and values.
+            </p>
+          </div>
+
+        </div>
+      </section>
+
+
+      {/* SECTION 4: MEMBERSHIP TIERS / SUBSCRIPTION */}
+      <section id="subscription" style={{ padding: '80px 24px', background: '#F8F6F0', borderTop: '1px solid #EAE5DC' }}>
         <div style={{ maxWidth: '1160px', margin: '0 auto', textAlign: 'center' }}>
           
           <h2 style={{
             fontFamily: "'Cormorant Garamond', serif",
-            fontSize: '36px',
+            fontSize: '38px',
             fontWeight: 700,
             color: '#1B2535',
             margin: 0
           }}>
-            Membership Tiers
+            Subscription Plans
           </h2>
           <p style={{ fontSize: '14px', color: '#667085', margin: '8px 0 48px 0' }}>
-            Choose a plan that fits your journey towards a faith-honoring union.
+            Select a membership plan tailored to your matrimonial search needs.
           </p>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px', alignItems: 'center' }} className="pricing-grid">
             
-            {/* Plan 1: Grace */}
+            {/* Plan 1: Free Tier */}
             <div style={{
               background: '#FFFFFF',
               border: '1px solid #EFEBE4',
@@ -465,9 +586,9 @@ export default function Home() {
               textAlign: 'left'
             }}>
               <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '24px', fontWeight: 700, color: '#1B2535', margin: 0 }}>
-                Grace
+                Free Member
               </h3>
-              <p style={{ fontSize: '12px', color: '#8A92A0', margin: '4px 0 20px 0' }}>Gentle Journey Starts</p>
+              <p style={{ fontSize: '12px', color: '#8A92A0', margin: '4px 0 20px 0' }}>Basic Profile Exploration</p>
 
               <div style={{ fontSize: '32px', fontWeight: 700, color: '#1B2535', marginBottom: '24px' }}>
                 Free
@@ -475,13 +596,13 @@ export default function Home() {
 
               <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 32px 0', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <li style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#475467' }}>
-                  <Check size={14} color="#C59B4E" /> Create profile
+                  <Check size={14} color="#C59B4E" /> Create verified profile
                 </li>
                 <li style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#475467' }}>
-                  <Check size={14} color="#C59B4E" /> Browse matches
+                  <Check size={14} color="#C59B4E" /> Browse member profiles
                 </li>
                 <li style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#475467' }}>
-                  <Check size={14} color="#C59B4E" /> Express interest
+                  <Check size={14} color="#C59B4E" /> Express interest in candidates
                 </li>
               </ul>
 
@@ -496,11 +617,11 @@ export default function Home() {
                 textDecoration: 'none',
                 fontSize: '14px'
               }}>
-                Get Started
+                Get Started Free
               </Link>
             </div>
 
-            {/* Plan 2: Covenant (Featured Most Popular) */}
+            {/* Plan 2: Silver / Gold Tier (Featured) */}
             <div style={{
               background: '#FFFFFF',
               border: '2px solid #C59B4E',
@@ -519,7 +640,7 @@ export default function Home() {
                 color: '#FFFFFF',
                 fontSize: '11px',
                 fontWeight: 700,
-                padding: '3px 14px',
+                padding: '4px 14px',
                 borderRadius: '12px',
                 textTransform: 'uppercase',
                 letterSpacing: '0.05em'
@@ -528,26 +649,26 @@ export default function Home() {
               </span>
 
               <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '24px', fontWeight: 700, color: '#1B2535', margin: 0 }}>
-                Covenant
+                Gold Membership
               </h3>
-              <p style={{ fontSize: '12px', color: '#8A92A0', margin: '4px 0 20px 0' }}>Intentional Search</p>
+              <p style={{ fontSize: '12px', color: '#8A92A0', margin: '4px 0 20px 0' }}>Enhanced Connection Access</p>
 
               <div style={{ fontSize: '32px', fontWeight: 700, color: '#1B2535', marginBottom: '24px' }}>
-                $29 <span style={{ fontSize: '14px', fontWeight: 400, color: '#8A92A0' }}>/ month</span>
+                ₹2,999 <span style={{ fontSize: '14px', fontWeight: 400, color: '#8A92A0' }}>/ 3 months</span>
               </div>
 
               <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 32px 0', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <li style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#1B2535', fontWeight: 600 }}>
-                  <Check size={14} color="#C59B4E" /> Unlimited messages
+                  <Check size={14} color="#C59B4E" /> Direct contact & messaging access
                 </li>
                 <li style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#475467' }}>
-                  <Check size={14} color="#C59B4E" /> Priority profile listing
+                  <Check size={14} color="#C59B4E" /> Priority search placement
                 </li>
                 <li style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#475467' }}>
-                  <Check size={14} color="#C59B4E" /> See who viewed you
+                  <Check size={14} color="#C59B4E" /> View verified contact details
                 </li>
                 <li style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#475467' }}>
-                  <Check size={14} color="#C59B4E" /> Advanced faith filters
+                  <Check size={14} color="#C59B4E" /> Advanced Church & Diocese filters
                 </li>
               </ul>
 
@@ -567,7 +688,7 @@ export default function Home() {
               </Link>
             </div>
 
-            {/* Plan 3: Sanctity */}
+            {/* Plan 3: Platinum / Assisted Tier */}
             <div style={{
               background: '#FFFFFF',
               border: '1px solid #EFEBE4',
@@ -576,23 +697,23 @@ export default function Home() {
               textAlign: 'left'
             }}>
               <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '24px', fontWeight: 700, color: '#1B2535', margin: 0 }}>
-                Sanctity
+                Platinum Tier
               </h3>
-              <p style={{ fontSize: '12px', color: '#8A92A0', margin: '4px 0 20px 0' }}>Complete Guidance</p>
+              <p style={{ fontSize: '12px', color: '#8A92A0', margin: '4px 0 20px 0' }}>Personal Matchmaking Guidance</p>
 
               <div style={{ fontSize: '32px', fontWeight: 700, color: '#1B2535', marginBottom: '24px' }}>
-                $89 <span style={{ fontSize: '14px', fontWeight: 400, color: '#8A92A0' }}>/ month</span>
+                ₹6,999 <span style={{ fontSize: '14px', fontWeight: 400, color: '#8A92A0' }}>/ 6 months</span>
               </div>
 
               <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 32px 0', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <li style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#475467' }}>
-                  <Check size={14} color="#C59B4E" /> All Covenant features
+                  <Check size={14} color="#C59B4E" /> All Gold features included
                 </li>
                 <li style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#475467' }}>
-                  <Check size={14} color="#C59B4E" /> Personal matchmaker
+                  <Check size={14} color="#C59B4E" /> Dedicated relationship manager
                 </li>
                 <li style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#475467' }}>
-                  <Check size={14} color="#C59B4E" /> Background verification
+                  <Check size={14} color="#C59B4E" /> Direct parish background check
                 </li>
               </ul>
 
@@ -607,7 +728,7 @@ export default function Home() {
                 textDecoration: 'none',
                 fontSize: '14px'
               }}>
-                Contact Us
+                Contact Matchmaker
               </Link>
             </div>
 
@@ -616,102 +737,7 @@ export default function Home() {
         </div>
       </section>
 
-
-      {/* FOOTER */}
-      <footer style={{ background: '#101928', color: '#94A3B8', padding: '60px 24px 32px 24px', fontSize: '13px' }}>
-        <div style={{ maxWidth: '1160px', margin: '0 auto', display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 2fr', gap: '48px', paddingBottom: '48px', borderBottom: '1px solid #1E293B' }} className="footer-grid">
-          
-          <div>
-            <div style={{
-              fontFamily: "'Cormorant Garamond', serif",
-              fontSize: '24px',
-              fontWeight: 700,
-              color: '#FFFFFF',
-              marginBottom: '12px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }}>
-              <Sparkles size={18} color="#C59B4E" />
-              <span>Grace & Covenant</span>
-            </div>
-            <p style={{ lineHeight: 1.6, maxWidth: '280px', margin: 0 }}>
-              Dedicated to providing a sacred space for church members to find their lifelong partners through faith and intentional connection.
-            </p>
-          </div>
-
-          <div>
-            <h4 style={{ color: '#C59B4E', fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '16px' }}>
-              DENOMINATIONS
-            </h4>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <Link to="/browse?denomination=Catholic" style={{ color: '#CBD5E1', textDecoration: 'none' }}>Catholic</Link>
-              <Link to="/browse?denomination=Orthodox" style={{ color: '#CBD5E1', textDecoration: 'none' }}>Orthodox</Link>
-              <Link to="/browse?denomination=Protestant" style={{ color: '#CBD5E1', textDecoration: 'none' }}>Protestant</Link>
-            </div>
-          </div>
-
-          <div>
-            <h4 style={{ color: '#C59B4E', fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '16px' }}>
-              SUPPORT
-            </h4>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <Link to="/safety" style={{ color: '#CBD5E1', textDecoration: 'none' }}>Privacy Policy</Link>
-              <Link to="/safety" style={{ color: '#CBD5E1', textDecoration: 'none' }}>Terms of Service</Link>
-              <Link to="/contact" style={{ color: '#CBD5E1', textDecoration: 'none' }}>Contact Support</Link>
-            </div>
-          </div>
-
-          <div>
-            <h4 style={{ color: '#C59B4E', fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '16px' }}>
-              NEWSLETTER
-            </h4>
-            <p style={{ fontSize: '12px', color: '#94A3B8', marginBottom: '12px' }}>
-              Subscribe for faith-based dating advice and community updates.
-            </p>
-            <form onSubmit={handleNewsletterSubmit} style={{ display: 'flex', gap: '8px' }}>
-              <input 
-                type="email"
-                placeholder="Email Address"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                required
-                style={{
-                  flex: 1,
-                  padding: '10px 14px',
-                  borderRadius: '8px',
-                  background: '#1E293B',
-                  border: '1px solid #334155',
-                  color: '#FFFFFF',
-                  fontSize: '13px',
-                  outline: 'none'
-                }}
-              />
-              <button 
-                type="submit"
-                style={{
-                  background: '#C59B4E',
-                  color: '#FFFFFF',
-                  border: 'none',
-                  borderRadius: '8px',
-                  padding: '0 16px',
-                  cursor: 'pointer',
-                  display: 'grid',
-                  placeItems: 'center'
-                }}
-              >
-                <Send size={14} />
-              </button>
-            </form>
-          </div>
-
-        </div>
-
-        <div style={{ maxWidth: '1160px', margin: '24px auto 0 auto', textAlign: 'center', fontSize: '12px', color: '#64748B' }}>
-          © 2024 Grace & Covenant. Sacredly bound for a lifetime.
-        </div>
-      </footer>
-
     </div>
   )
 }
+

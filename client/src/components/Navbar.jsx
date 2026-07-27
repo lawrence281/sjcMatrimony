@@ -4,11 +4,21 @@ import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 
 export default function Navbar() {
-  const { user, logout } = useAuth()
+  const { user } = useAuth()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const location = useLocation()
 
   const isActive = (path) => location.pathname === path
+
+  const navItemStyle = (path) => ({
+    fontSize: '14px',
+    fontWeight: isActive(path) ? 600 : 500,
+    color: isActive(path) ? '#B88E4C' : '#475467',
+    textDecoration: 'none',
+    borderBottom: isActive(path) ? '2px solid #B88E4C' : '2px solid transparent',
+    paddingBottom: '4px',
+    transition: 'all 0.2s ease-in-out'
+  })
 
   return (
     <nav className="navbar" style={{
@@ -33,97 +43,46 @@ export default function Navbar() {
         <Link to="/" className="navbar-logo" onClick={() => setMobileMenuOpen(false)} style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '8px',
+          gap: '10px',
           textDecoration: 'none',
           color: '#1B2535',
           fontFamily: "'Cormorant Garamond', 'Playfair Display', serif",
-          fontSize: '24px',
+          fontSize: '25px',
           fontWeight: 700,
           letterSpacing: '-0.02em'
         }}>
-          <Sparkles size={20} color="#B88E4C" fill="#B88E4C" style={{ opacity: 0.9 }} />
-          <span>Grace & Covenant</span>
+          <div style={{
+            width: '34px',
+            height: '34px',
+            borderRadius: '10px',
+            background: 'linear-gradient(135deg, #1A273D 0%, #2A3B56 100%)',
+            display: 'grid',
+            placeItems: 'center',
+            boxShadow: '0 2px 8px rgba(26, 39, 61, 0.2)'
+          }}>
+            <Sparkles size={18} color="#C59B4E" fill="#C59B4E" />
+          </div>
+          <span style={{ fontWeight: 700, color: '#1B2535' }}>SJC Matrimony</span>
         </Link>
 
         {/* Center Links */}
         <div className="navbar-links hide-on-mobile" style={{ display: 'flex', gap: '32px', alignItems: 'center' }}>
-          <Link 
-            to="/browse" 
-            style={{
-              fontSize: '14px',
-              fontWeight: isActive('/browse') ? 600 : 500,
-              color: isActive('/browse') ? '#B88E4C' : '#475467',
-              textDecoration: 'none',
-              borderBottom: isActive('/browse') ? '2px solid #B88E4C' : '2px solid transparent',
-              paddingBottom: '2px',
-              transition: 'all 0.2s'
-            }}
-          >
-            Browse Members
+          <Link to="/browse" style={navItemStyle('/browse')}>
+            Members
           </Link>
-          <a 
-            href="#success-stories" 
-            style={{ fontSize: '14px', fontWeight: 500, color: '#475467', textDecoration: 'none', transition: 'color 0.2s' }}
-            onClick={(e) => {
-              if (location.pathname !== '/') {
-                // allow navigating back home
-              }
-            }}
-          >
-            Success Stories
-          </a>
-          <a 
-            href="#denominations" 
-            style={{ fontSize: '14px', fontWeight: 500, color: '#475467', textDecoration: 'none', transition: 'color 0.2s' }}
-          >
-            Denominations
-          </a>
-          <Link 
-            to="/safety" 
-            style={{ fontSize: '14px', fontWeight: 500, color: '#475467', textDecoration: 'none', transition: 'color 0.2s' }}
-          >
-            About Us
+          <Link to="/subscription" style={navItemStyle('/subscription')}>
+            Subscription
           </Link>
+          {user && (
+            <Link to="/my-contact-requests" style={navItemStyle('/my-contact-requests')}>
+              Approved Contacts
+            </Link>
+          )}
         </div>
 
         {/* Right Actions */}
         <div className="navbar-right" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          {user ? (
-            <>
-              <Link 
-                to="/profile" 
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  fontSize: '14px',
-                  fontWeight: 600,
-                  color: '#1B2535',
-                  textDecoration: 'none',
-                  padding: '8px 16px',
-                  borderRadius: '20px',
-                  background: '#F3F0E9',
-                  transition: 'background 0.2s'
-                }}
-              >
-                <User size={16} color="#B88E4C" />
-                <span>My Profile</span>
-              </Link>
-              <button 
-                onClick={logout}
-                style={{
-                  fontSize: '13px',
-                  fontWeight: 500,
-                  color: '#667085',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer'
-                }}
-              >
-                Sign Out
-              </button>
-            </>
-          ) : (
+          {!user ? (
             <>
               <Link 
                 to="/login" 
@@ -154,6 +113,48 @@ export default function Navbar() {
                 Join Now
               </Link>
             </>
+          ) : (
+            /* User Greeting & Profile Icon Button on Right Side */
+            <Link 
+              to="/profile" 
+              title="View My Profile"
+              className="navbar-profile-btn"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                textDecoration: 'none',
+                padding: '6px 14px',
+                borderRadius: '24px',
+                background: isActive('/profile') ? '#1A273D' : '#F3F0E9',
+                border: '1.5px solid #EAE5DC',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                transition: 'all 0.2s ease-in-out'
+              }}
+            >
+              <span 
+                className="hide-on-mobile"
+                style={{ 
+                  fontSize: '13.5px', 
+                  fontWeight: 600, 
+                  color: isActive('/profile') ? '#FFFFFF' : '#1B2535',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                Hi, {user?.firstName || user?.name?.split(' ')[0] || 'Member'} 👋
+              </span>
+              <div style={{
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                background: isActive('/profile') ? '#C59B4E' : '#1A273D',
+                display: 'grid',
+                placeItems: 'center',
+                boxShadow: '0 2px 6px rgba(0,0,0,0.1)'
+              }}>
+                <User size={16} color="#FFFFFF" />
+              </div>
+            </Link>
           )}
           
           <button 
@@ -166,44 +167,58 @@ export default function Navbar() {
               display: 'none',
               color: '#1B2535'
             }}
+            aria-label="Toggle mobile menu"
           >
             {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
         </div>
       </div>
 
-      {/* Mobile Dropdown */}
+      {/* Mobile Dropdown Menu */}
       {mobileMenuOpen && (
         <div className="mobile-menu-drawer" style={{
+          position: 'absolute',
+          top: '100%',
+          left: 0,
+          right: 0,
           background: '#FFFFFF',
           borderBottom: '1px solid #EAE5DC',
           padding: '20px 24px',
           display: 'flex',
           flexDirection: 'column',
-          gap: '16px'
+          gap: '16px',
+          boxShadow: '0 12px 32px rgba(27, 37, 53, 0.08)',
+          zIndex: 350
         }}>
-          <Link to="/browse" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: '15px', fontWeight: 600, color: '#1B2535', textDecoration: 'none' }}>
-            Browse Members
+          <Link to="/browse" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: '15px', fontWeight: isActive('/browse') ? 700 : 500, color: isActive('/browse') ? '#B88E4C' : '#1B2535', textDecoration: 'none' }}>
+            Members
           </Link>
-          <Link to="/safety" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: '15px', fontWeight: 500, color: '#475467', textDecoration: 'none' }}>
-            About Us & Safety
+          <Link to="/subscription" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: '15px', fontWeight: isActive('/subscription') ? 700 : 500, color: isActive('/subscription') ? '#B88E4C' : '#1B2535', textDecoration: 'none' }}>
+            Subscription
           </Link>
-          <Link to="/contact" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: '15px', fontWeight: 500, color: '#475467', textDecoration: 'none' }}>
-            Contact Support
-          </Link>
-          <hr style={{ border: 'none', borderTop: '1px solid #EAE5DC' }} />
-          {user ? (
-            <Link to="/profile" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: '15px', fontWeight: 600, color: '#B88E4C', textDecoration: 'none' }}>
-              My Profile
+          {user && (
+            <Link to="/my-contact-requests" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: '15px', fontWeight: isActive('/my-contact-requests') ? 700 : 500, color: isActive('/my-contact-requests') ? '#B88E4C' : '#1B2535', textDecoration: 'none' }}>
+              Approved Contacts
             </Link>
-          ) : (
-            <Link to="/login" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: '15px', fontWeight: 600, color: '#FFFFFF', background: '#1A273D', padding: '10px', borderRadius: '20px', textAlign: 'center', textDecoration: 'none' }}>
-              Sign In / Join Now
-            </Link>
+          )}
+          <Link to="/profile" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: '15px', fontWeight: isActive('/profile') ? 700 : 500, color: isActive('/profile') ? '#B88E4C' : '#1B2535', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <User size={18} color="#B88E4C" />
+            <span>My Profile</span>
+          </Link>
+          {!user && (
+            <>
+              <hr style={{ border: 'none', borderTop: '1px solid #EAE5DC' }} />
+              <Link to="/login" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: '15px', fontWeight: 600, color: '#FFFFFF', background: '#1A273D', padding: '10px', borderRadius: '20px', textAlign: 'center', textDecoration: 'none' }}>
+                Sign In / Join Now
+              </Link>
+            </>
           )}
         </div>
       )}
     </nav>
   )
 }
+
+
+
 

@@ -1,107 +1,130 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { Heart, Mail, PhoneCall, Flag, BookOpen, Church, Briefcase, Users, ShieldCheck, Check, Sparkles, Send } from 'lucide-react'
+import { Heart, Mail, PhoneCall, Flag, BookOpen, Church, Briefcase, Users, ShieldCheck, Check, Sparkles, Send, MapPin, GraduationCap, UserCheck, Calendar, ArrowLeft, Loader2, Award, Home as HomeIcon } from 'lucide-react'
 import api from '../services/api'
 import toast from 'react-hot-toast'
 
-const DEFAULT_ELEANOR = {
-  _id: 'eleanor-1',
-  firstName: 'Eleanor',
-  lastName: 'Grace',
-  age: 28,
-  verificationStatus: 'Verified',
-  quote: 'Seeking a life of shared devotion and quiet joy.',
-  aboutMe: `I am a soul nurtured by the rhythmic beauty of tradition and the quiet morning light of the chapel. My life is a tapestry woven with threads of faith, family, and a deep appreciation for the arts. I spend my weekdays as a Restoration Architect, preserving the sacred spaces that have stood the test of time, and my weekends often involve choral practice or volunteering at the parish youth center.
-
-I believe that marriage is a covenant—a sacred promise to grow together, to serve one another, and to build a home where God's presence is the cornerstone. I value intentionality, intellectual curiosity, and a gentle heart.`,
-  profileImage: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=800&q=80',
-  photos: [
-    { url: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=800&q=80', caption: 'Main Portrait' },
-    { url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80', caption: 'Sunday Service' },
-    { url: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=800&q=80', caption: 'Chapel Garden' },
-  ],
-  height: `5'7" (170cm)`,
-  maritalStatus: 'Never Married',
-  city: 'Charleston',
-  state: 'SC',
-  denomination: 'Anglican (ACNA)',
-  churchAddress: "St. Jude's Cathedral, 123 Cathedral Way, Charleston, SC",
-  spiritualValues: ['Daily Prayer', 'Traditional Liturgy', 'Sacramental Living', 'Scripture Study'],
-  degree: 'M.Arch in Heritage Conservation',
-  occupation: 'Restoration Architect',
-  familyStatus: 'Grew up in a close-knit family with three siblings. Deeply value parental guidance and heritage.',
-  origin: 'Originally from Savannah, Georgia. Roots are deeply planted in Southern hospitality and faith.',
-  preferredAge: '27 - 38',
-  preferredHeight: "5'10\" +",
-  preferredEducation: 'Post-Grad',
-  preferredChurch: 'Anglican/Catholic',
-}
-
 export default function MemberDetail() {
   const { id } = useParams()
-  const [profile, setProfile] = useState(DEFAULT_ELEANOR)
+  const [profile, setProfile] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [errorState, setErrorState] = useState(false)
   const [activePhoto, setActivePhoto] = useState('')
-  const [interestSent, setInterestSent] = useState(false)
-  const [messageSent, setMessageSent] = useState(false)
-  const [contactRequested, setContactRequested] = useState(false)
+  const [requestStatus, setRequestStatus] = useState('None') // 'None', 'Pending', 'Approved', 'Rejected'
+  const [confirmModalOpen, setConfirmModalOpen] = useState(false)
+  const [submittingRequest, setSubmittingRequest] = useState(false)
 
   useEffect(() => {
-    if (id && id !== 'eleanor-1') {
-      api.get(`/profile/member/${id}`)
-        .then(res => {
-          if (res.data && res.data.success && res.data.profile) {
-            const p = res.data.profile
-            setProfile({
-              ...DEFAULT_ELEANOR,
-              ...p,
-              quote: p.aboutMe ? `"${p.aboutMe.slice(0, 50)}..."` : DEFAULT_ELEANOR.quote,
-              profileImage: p.profileImage || DEFAULT_ELEANOR.profileImage,
-              photos: p.photos && p.photos.length > 0 ? p.photos : DEFAULT_ELEANOR.photos,
-            })
-            setActivePhoto(p.profileImage || DEFAULT_ELEANOR.profileImage)
-          }
-        })
-        .catch(() => {
-          setActivePhoto(DEFAULT_ELEANOR.profileImage)
-        })
-    } else {
-      setActivePhoto(DEFAULT_ELEANOR.profileImage)
+    if (id) {
+      fetchMemberDetail()
     }
   }, [id])
 
-  const handleExpressInterest = async () => {
+  const fetchMemberDetail = async () => {
+    setLoading(true)
+    setErrorState(false)
     try {
-      if (profile._id) await api.post(`/profile/connect/${profile._id}`)
-      setInterestSent(true)
-      toast.success(`Interest expressed in ${profile.firstName}!`)
+      const res = await api.get(`/profile/member/${id}`)
+      if (res.data && res.data.success && res.data.profile) {
+        const p = res.data.profile
+        setProfile(p)
+        setActivePhoto(p.profileImage || '')
+
+        // Fetch Contact Request status if logged in
+        try {
+          const statusRes = await api.get(`/contact-requests/status/${id}`)
+          if (statusRes.data && statusRes.data.success) {
+            setRequestStatus(statusRes.data.status || 'None')
+          }
+        } catch (e) {
+          setRequestStatus('None')
+        }
+      } else {
+        setErrorState(true)
+      }
     } catch (err) {
-      setInterestSent(true)
-      toast.success(`Interest expressed in ${profile.firstName}!`)
+      console.error('Failed to load member profile detail:', err)
+      setErrorState(true)
+    } finally {
+      setLoading(false)
     }
   }
 
-  const handleSendMessage = () => {
-    setMessageSent(true)
-    toast.success(`Message feature opened for ${profile.firstName}!`)
+  const submitContactRequest = async () => {
+    setSubmittingRequest(true)
+    try {
+      const res = await api.post(`/contact-requests/request/${id}`)
+      if (res.data && res.data.success) {
+        toast.success(res.data.message || 'Contact details request submitted for admin review!')
+        setRequestStatus('Pending')
+        setConfirmModalOpen(false)
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to submit contact request')
+    } finally {
+      setSubmittingRequest(false)
+    }
   }
 
-  const handleContactRequest = () => {
-    setContactRequested(true)
-    toast.success(`Contact details request sent to ${profile.firstName}!`)
+  if (loading) {
+    return (
+      <div style={{ background: '#FAF8F5', minHeight: '80vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: "'Inter', sans-serif" }}>
+        <Loader2 size={40} color="#B88E4C" className="animate-spin" style={{ marginBottom: '16px' }} />
+        <p style={{ color: '#667085', fontSize: '14px', fontWeight: 500 }}>Loading member profile details...</p>
+      </div>
+    )
   }
 
-  const photosList = profile.photos && profile.photos.length > 0 ? profile.photos : DEFAULT_ELEANOR.photos
+  if (errorState || !profile) {
+    return (
+      <div style={{ background: '#FAF8F5', minHeight: '80vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px', fontFamily: "'Inter', sans-serif" }}>
+        <div style={{ background: '#FFFFFF', padding: '40px 32px', borderRadius: '20px', border: '1px solid #EFEBE4', textAlign: 'center', maxWidth: '480px', boxShadow: '0 8px 30px rgba(0,0,0,0.04)' }}>
+          <ShieldCheck size={48} color="#94A3B8" style={{ margin: '0 auto 16px auto' }} />
+          <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '28px', fontWeight: 700, color: '#1B2535', margin: '0 0 8px 0' }}>Profile Unavailable</h2>
+          <p style={{ color: '#667085', fontSize: '14px', lineHeight: 1.6, marginBottom: '24px' }}>
+            This member profile is either not available, currently undergoing verification, or has been updated.
+          </p>
+          <Link to="/browse" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: '#1A273D', color: '#FFFFFF', padding: '12px 24px', borderRadius: '12px', textDecoration: 'none', fontWeight: 600, fontSize: '14px' }}>
+            <ArrowLeft size={16} />
+            <span>Back to Members</span>
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
+  const defaultPhoto = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80'
+  const displayPhoto = activePhoto || profile.profileImage || defaultPhoto
+  const photosList = profile.photos && profile.photos.length > 0 ? profile.photos : []
+  const locationText = [profile.city, profile.district, profile.state, profile.country].filter(Boolean).join(', ') || 'Not Specified'
 
   return (
-    <div style={{ background: '#FAF8F5', minHeight: '100vh', padding: '40px 0 80px 0', fontFamily: "'Inter', sans-serif" }}>
+    <div style={{ background: '#FAF8F5', minHeight: '100vh', padding: '32px 0 80px 0', fontFamily: "'Inter', sans-serif" }}>
       <div style={{ maxWidth: '1160px', margin: '0 auto', padding: '0 24px' }}>
 
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: '400px 1fr',
-          gap: '48px',
-          alignItems: 'start'
-        }} className="profile-detail-grid">
+        {/* Back navigation link */}
+        <div style={{ marginBottom: '20px' }}>
+          <Link 
+            to="/browse"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              color: '#8A92A0',
+              fontSize: '13px',
+              fontWeight: 500,
+              textDecoration: 'none',
+              transition: 'color 0.2s'
+            }}
+            onMouseOver={e => e.currentTarget.style.color = '#B88E4C'}
+            onMouseOut={e => e.currentTarget.style.color = '#8A92A0'}
+          >
+            <ArrowLeft size={16} />
+            <span>Back to Eligible Members</span>
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-10 items-start profile-detail-grid">
 
           {/* LEFT COLUMN: PHOTOS & ACTIONS & QUICK OVERVIEW */}
           <div>
@@ -112,119 +135,160 @@ export default function MemberDetail() {
               borderRadius: '20px',
               overflow: 'hidden',
               boxShadow: '0 4px 20px rgba(0,0,0,0.04)',
-              marginBottom: '16px'
+              marginBottom: '16px',
+              position: 'relative'
             }}>
               <img 
-                src={activePhoto || profile.profileImage} 
-                alt={profile.firstName}
+                src={displayPhoto} 
+                alt={`${profile.firstName} ${profile.lastName}`}
                 style={{
                   width: '100%',
-                  height: '480px',
+                  height: '460px',
                   objectFit: 'cover'
                 }}
+                onError={(e) => {
+                  e.target.onerror = null
+                  e.target.src = defaultPhoto
+                }}
               />
+              {/* Main Photo Image */}
             </div>
 
             {/* Gallery Thumbnail Strip */}
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(3, 1fr)',
-              gap: '12px',
-              marginBottom: '24px'
-            }}>
-              {photosList.map((photo, index) => (
-                <div 
-                  key={index}
-                  onClick={() => setActivePhoto(photo.url)}
-                  style={{
-                    height: '80px',
-                    borderRadius: '12px',
-                    overflow: 'hidden',
-                    cursor: 'pointer',
-                    border: (activePhoto === photo.url) ? '2px solid #B88E4C' : '1px solid #EFEBE4',
-                    transition: 'border 0.2s, opacity 0.2s',
-                    opacity: activePhoto === photo.url ? 1 : 0.7
-                  }}
-                >
-                  <img 
-                    src={photo.url} 
-                    alt={`Gallery ${index}`} 
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                  />
-                </div>
-              ))}
-            </div>
+            {photosList.length > 0 && (
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(4, 1fr)',
+                gap: '10px',
+                marginBottom: '24px'
+              }}>
+                {photosList.map((photo, index) => (
+                  <div 
+                    key={index}
+                    onClick={() => setActivePhoto(photo.url)}
+                    style={{
+                      height: '74px',
+                      borderRadius: '10px',
+                      overflow: 'hidden',
+                      cursor: 'pointer',
+                      border: (displayPhoto === photo.url) ? '2px solid #B88E4C' : '1px solid #EFEBE4',
+                      transition: 'border 0.2s, opacity 0.2s',
+                      opacity: displayPhoto === photo.url ? 1 : 0.7
+                    }}
+                  >
+                    <img 
+                      src={photo.url} 
+                      alt={`Gallery ${index}`} 
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      onError={(e) => { e.target.onerror = null; e.target.src = defaultPhoto }}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
 
-            {/* Primary Action Buttons */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '32px' }}>
-              <button 
-                onClick={handleExpressInterest}
-                disabled={interestSent}
-                style={{
-                  width: '100%',
-                  padding: '14px',
-                  borderRadius: '12px',
-                  border: 'none',
-                  background: interestSent ? '#10B981' : '#C59B4E',
-                  color: '#FFFFFF',
-                  fontSize: '15px',
-                  fontWeight: 600,
-                  cursor: interestSent ? 'default' : 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                  boxShadow: '0 4px 16px rgba(197, 155, 78, 0.25)',
-                  transition: 'all 0.2s'
-                }}
-              >
-                <Heart size={18} fill="#FFFFFF" />
-                <span>{interestSent ? 'Interest Expressed' : 'Express Interest'}</span>
-              </button>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            {/* Primary Action Button / Contact Request Status */}
+            <div style={{ marginBottom: '32px' }}>
+              {requestStatus === 'None' && (
                 <button 
-                  onClick={handleSendMessage}
+                  onClick={() => setConfirmModalOpen(true)}
                   style={{
-                    padding: '12px',
+                    width: '100%',
+                    padding: '14px',
                     borderRadius: '12px',
                     border: 'none',
                     background: '#1A273D',
                     color: '#FFFFFF',
-                    fontSize: '14px',
+                    fontSize: '15px',
                     fontWeight: 600,
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: '6px'
+                    gap: '8px',
+                    boxShadow: '0 4px 16px rgba(26, 39, 61, 0.2)',
+                    transition: 'all 0.2s'
                   }}
                 >
-                  <Mail size={16} />
-                  <span>Send Message</span>
+                  <PhoneCall size={18} />
+                  <span>Request Contact Details</span>
                 </button>
+              )}
 
-                <button 
-                  onClick={handleContactRequest}
-                  style={{
-                    padding: '12px',
+              {requestStatus === 'Pending' && (
+                <div style={{
+                  width: '100%',
+                  padding: '14px 16px',
+                  borderRadius: '12px',
+                  background: '#FFFBEB',
+                  border: '1px solid #FDE68A',
+                  color: '#B45309',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  textAlign: 'center'
+                }}>
+                  <Loader2 size={16} className="animate-spin" />
+                  <span>Request Pending Admin Review</span>
+                </div>
+              )}
+
+              {requestStatus === 'Rejected' && (
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{
+                    width: '100%',
+                    padding: '12px 16px',
                     borderRadius: '12px',
-                    border: '1px solid #1A273D',
-                    background: '#FFFFFF',
-                    color: '#1A273D',
+                    background: '#FEF2F2',
+                    border: '1px solid #FCA5A5',
+                    color: '#DC2626',
                     fontSize: '14px',
                     fontWeight: 600,
-                    cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: '6px'
+                    gap: '8px',
+                    marginBottom: '8px'
+                  }}>
+                    <ShieldCheck size={16} />
+                    <span>Request Declined by Admin</span>
+                  </div>
+                  <button 
+                    onClick={() => setConfirmModalOpen(true)}
+                    style={{ background: 'none', border: 'none', color: '#1B2535', fontSize: '13px', textDecoration: 'underline', cursor: 'pointer', fontWeight: 600 }}
+                  >
+                    Re-submit Contact Request
+                  </button>
+                </div>
+              )}
+
+              {requestStatus === 'Approved' && (
+                <Link
+                  to="/my-contact-requests"
+                  style={{
+                    width: '100%',
+                    padding: '14px',
+                    borderRadius: '12px',
+                    background: 'linear-gradient(135deg, #059669 0%, #10B981 100%)',
+                    color: '#FFFFFF',
+                    fontSize: '15px',
+                    fontWeight: 700,
+                    textDecoration: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    boxShadow: '0 4px 16px rgba(5, 150, 105, 0.25)',
+                    textAlign: 'center'
                   }}
                 >
-                  <PhoneCall size={16} />
-                  <span>Contact Request</span>
-                </button>
-              </div>
+                  <UserCheck size={18} />
+                  <span>View Approved Contact Details</span>
+                </Link>
+              )}
             </div>
 
             {/* Quick Overview Card */}
@@ -248,25 +312,51 @@ export default function MemberDetail() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
                   <span style={{ color: '#667085' }}>Age</span>
-                  <span style={{ fontWeight: 600, color: '#1B2535' }}>{profile.age || 28} Years</span>
+                  <span style={{ fontWeight: 600, color: '#1B2535' }}>{profile.age ? `${profile.age} Years` : '—'}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
+                  <span style={{ color: '#667085' }}>Gender</span>
+                  <span style={{ fontWeight: 600, color: '#1B2535' }}>{profile.gender || '—'}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
                   <span style={{ color: '#667085' }}>Height</span>
-                  <span style={{ fontWeight: 600, color: '#1B2535' }}>{profile.height || `5'7" (170cm)`}</span>
+                  <span style={{ fontWeight: 600, color: '#1B2535' }}>{profile.height || '—'}</span>
                 </div>
+                {profile.weight && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
+                    <span style={{ color: '#667085' }}>Weight</span>
+                    <span style={{ fontWeight: 600, color: '#1B2535' }}>{profile.weight}</span>
+                  </div>
+                )}
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
                   <span style={{ color: '#667085' }}>Marital Status</span>
-                  <span style={{ fontWeight: 600, color: '#1B2535' }}>{profile.maritalStatus || 'Never Married'}</span>
+                  <span style={{ fontWeight: 600, color: '#1B2535' }}>{profile.maritalStatus || '—'}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
+                  <span style={{ color: '#667085' }}>Mother Tongue</span>
+                  <span style={{ fontWeight: 600, color: '#1B2535' }}>{profile.motherTongue || '—'}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
                   <span style={{ color: '#667085' }}>Location</span>
-                  <span style={{ fontWeight: 600, color: '#1B2535' }}>{profile.city || 'Charleston'}, {profile.state || 'SC'}</span>
+                  <span style={{ fontWeight: 600, color: '#1B2535', textAlign: 'right' }}>{[profile.city, profile.state].filter(Boolean).join(', ') || '—'}</span>
                 </div>
+                {profile.nativePlace && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
+                    <span style={{ color: '#667085' }}>Native Place</span>
+                    <span style={{ fontWeight: 600, color: '#1B2535' }}>{profile.nativePlace}</span>
+                  </div>
+                )}
+                {profile.profileFor && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
+                    <span style={{ color: '#667085' }}>Profile For</span>
+                    <span style={{ fontWeight: 600, color: '#1B2535' }}>{profile.profileFor}</span>
+                  </div>
+                )}
               </div>
 
               <div style={{ textAlign: 'center', marginTop: '24px', paddingTop: '16px', borderTop: '1px solid #F3F0E9' }}>
                 <button 
-                  onClick={() => toast('Profile report submitted to administration for safety review.')}
+                  onClick={() => toast.success('Profile report submitted for administrative safety review.')}
                   style={{
                     background: 'none',
                     border: 'none',
@@ -288,12 +378,12 @@ export default function MemberDetail() {
 
           {/* RIGHT COLUMN: MAIN PROFILE DETAILS */}
           <div>
-            {/* Header Header Info */}
+            {/* Header Info */}
             <div style={{ marginBottom: '32px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px', flexWrap: 'wrap' }}>
                 <h1 style={{
                   fontFamily: "'Cormorant Garamond', serif",
-                  fontSize: '44px',
+                  fontSize: '40px',
                   fontWeight: 700,
                   color: '#1B2535',
                   margin: 0,
@@ -302,50 +392,42 @@ export default function MemberDetail() {
                   {profile.firstName} {profile.lastName}
                 </h1>
                 
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <span style={{
-                    background: '#F3F0E9',
-                    border: '1px solid #EAE5DC',
-                    padding: '4px 12px',
-                    borderRadius: '16px',
-                    fontSize: '12px',
-                    fontWeight: 600,
-                    color: '#1B2535'
-                  }}>
-                    Verified
-                  </span>
-                  <span style={{
-                    background: '#1A273D',
-                    padding: '4px 12px',
-                    borderRadius: '16px',
-                    fontSize: '12px',
-                    fontWeight: 600,
-                    color: '#FFFFFF'
-                  }}>
-                    Active Now
-                  </span>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  {profile.denomination && (
+                    <span style={{
+                      background: '#1A273D',
+                      padding: '4px 12px',
+                      borderRadius: '16px',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      color: '#FFFFFF'
+                    }}>
+                      {profile.denomination}
+                    </span>
+                  )}
                 </div>
               </div>
 
-              {/* Tagline quote */}
-              <p style={{
-                fontFamily: "'Cormorant Garamond', serif",
-                fontSize: '20px',
-                fontStyle: 'italic',
-                color: '#B88E4C',
-                margin: 0
-              }}>
-                "{profile.quote || 'Seeking a life of shared devotion and quiet joy.'}"
+              {/* Subheading location and profession */}
+              <p style={{ fontSize: '15px', color: '#667085', margin: '4px 0 0 0', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <MapPin size={16} color="#B88E4C" />
+                <span>{locationText}</span>
+                {profile.occupation && (
+                  <>
+                    <span style={{ color: '#D6C7AF' }}>•</span>
+                    <span>{profile.occupation}</span>
+                  </>
+                )}
               </p>
             </div>
 
             {/* Section 1: About Me */}
-            <div style={{ marginBottom: '40px' }}>
+            <div style={{ marginBottom: '40px', background: '#FFFFFF', border: '1px solid #EFEBE4', borderRadius: '16px', padding: '24px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
                 <BookOpen size={20} color="#B88E4C" />
                 <h2 style={{
                   fontFamily: "'Cormorant Garamond', serif",
-                  fontSize: '28px',
+                  fontSize: '26px',
                   fontWeight: 700,
                   color: '#1B2535',
                   margin: 0
@@ -360,66 +442,105 @@ export default function MemberDetail() {
                 color: '#475467',
                 whiteSpace: 'pre-line'
               }}>
-                {profile.aboutMe || DEFAULT_ELEANOR.aboutMe}
+                {profile.aboutMe || 'No detailed description provided yet.'}
               </div>
             </div>
 
-            {/* Section 2: Church & Faith */}
-            <div style={{ marginBottom: '40px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+            {/* Section 2: Church & Faith Information */}
+            <div style={{ marginBottom: '40px', background: '#FFFFFF', border: '1px solid #EFEBE4', borderRadius: '16px', padding: '24px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
                 <Church size={20} color="#B88E4C" />
                 <h2 style={{
                   fontFamily: "'Cormorant Garamond', serif",
-                  fontSize: '28px',
+                  fontSize: '26px',
                   fontWeight: 700,
                   color: '#1B2535',
                   margin: 0
                 }}>
-                  Church & Faith
+                  Religious & Church Information
                 </h2>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
-                <div style={{ background: '#FFFFFF', border: '1px solid #EFEBE4', borderRadius: '12px', padding: '16px' }}>
-                  <span style={{ fontSize: '12px', color: '#8A92A0', display: 'block', marginBottom: '4px' }}>Denomination</span>
-                  <span style={{ fontSize: '15px', fontWeight: 600, color: '#1B2535' }}>{profile.denomination || 'Anglican (ACNA)'}</span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
+                <div style={{ background: '#FAF8F5', border: '1px solid #EAE5DC', borderRadius: '12px', padding: '14px' }}>
+                  <span style={{ fontSize: '12px', color: '#8A92A0', display: 'block', marginBottom: '4px' }}>Religion</span>
+                  <span style={{ fontSize: '15px', fontWeight: 600, color: '#1B2535' }}>{profile.religion || 'Christian'}</span>
                 </div>
-                <div style={{ background: '#FFFFFF', border: '1px solid #EFEBE4', borderRadius: '12px', padding: '16px' }}>
-                  <span style={{ fontSize: '12px', color: '#8A92A0', display: 'block', marginBottom: '4px' }}>Church Address</span>
-                  <span style={{ fontSize: '15px', fontWeight: 600, color: '#1B2535' }}>{profile.churchAddress || profile.church || "St. Jude's Anglican Cathedral, Charleston, SC"}</span>
+                <div style={{ background: '#FAF8F5', border: '1px solid #EAE5DC', borderRadius: '12px', padding: '14px' }}>
+                  <span style={{ fontSize: '12px', color: '#8A92A0', display: 'block', marginBottom: '4px' }}>Denomination</span>
+                  <span style={{ fontSize: '15px', fontWeight: 600, color: '#1B2535' }}>{profile.denomination || '—'}</span>
+                </div>
+                <div style={{ background: '#FAF8F5', border: '1px solid #EAE5DC', borderRadius: '12px', padding: '14px' }}>
+                  <span style={{ fontSize: '12px', color: '#8A92A0', display: 'block', marginBottom: '4px' }}>Diocese</span>
+                  <span style={{ fontSize: '15px', fontWeight: 600, color: '#1B2535' }}>{profile.diocese || '—'}</span>
+                </div>
+                <div style={{ background: '#FAF8F5', border: '1px solid #EAE5DC', borderRadius: '12px', padding: '14px' }}>
+                  <span style={{ fontSize: '12px', color: '#8A92A0', display: 'block', marginBottom: '4px' }}>Local Church Name</span>
+                  <span style={{ fontSize: '15px', fontWeight: 600, color: '#1B2535' }}>{profile.church || '—'}</span>
                 </div>
               </div>
 
-              <div>
-                <span style={{ fontSize: '12px', color: '#8A92A0', display: 'block', marginBottom: '8px' }}>Spiritual Values</span>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                  {(profile.spiritualValues || DEFAULT_ELEANOR.spiritualValues).map((val, idx) => (
-                    <span 
-                      key={idx}
-                      style={{
-                        background: '#F9F7F3',
-                        border: '1px solid #EAE5DC',
-                        padding: '6px 14px',
-                        borderRadius: '16px',
-                        fontSize: '13px',
-                        fontWeight: 500,
-                        color: '#1B2535'
-                      }}
-                    >
-                      {val}
-                    </span>
-                  ))}
+              {profile.churchAddress && (
+                <div style={{ background: '#FAF8F5', border: '1px solid #EAE5DC', borderRadius: '12px', padding: '14px', marginBottom: '20px' }}>
+                  <span style={{ fontSize: '12px', color: '#8A92A0', display: 'block', marginBottom: '4px' }}>Church Address</span>
+                  <span style={{ fontSize: '14px', fontWeight: 500, color: '#1B2535', lineHeight: 1.5 }}>{profile.churchAddress}</span>
                 </div>
+              )}
+
+              {/* Sacraments & Church Activities */}
+              <div>
+                <span style={{ fontSize: '12px', color: '#8A92A0', display: 'block', marginBottom: '10px', textTransform: 'uppercase', fontWeight: 600 }}>
+                  Sacraments & Church Involvement
+                </span>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                  <span style={{
+                    background: profile.baptized ? '#ECFDF5' : '#F1F5F9',
+                    color: profile.baptized ? '#047857' : '#64748B',
+                    border: `1px solid ${profile.baptized ? '#A7F3D0' : '#E2E8F0'}`,
+                    padding: '6px 14px', borderRadius: '16px', fontSize: '13px', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '6px'
+                  }}>
+                    {profile.baptized ? <Check size={14} /> : null} Baptized: {profile.baptized ? 'Yes' : 'No'}
+                  </span>
+                  <span style={{
+                    background: profile.confirmed ? '#ECFDF5' : '#F1F5F9',
+                    color: profile.confirmed ? '#047857' : '#64748B',
+                    border: `1px solid ${profile.confirmed ? '#A7F3D0' : '#E2E8F0'}`,
+                    padding: '6px 14px', borderRadius: '16px', fontSize: '13px', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '6px'
+                  }}>
+                    {profile.confirmed ? <Check size={14} /> : null} Confirmed: {profile.confirmed ? 'Yes' : 'No'}
+                  </span>
+                  <span style={{
+                    background: profile.firstHolyCommunion ? '#ECFDF5' : '#F1F5F9',
+                    color: profile.firstHolyCommunion ? '#047857' : '#64748B',
+                    border: `1px solid ${profile.firstHolyCommunion ? '#A7F3D0' : '#E2E8F0'}`,
+                    padding: '6px 14px', borderRadius: '16px', fontSize: '13px', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '6px'
+                  }}>
+                    {profile.firstHolyCommunion ? <Check size={14} /> : null} First Communion: {profile.firstHolyCommunion ? 'Yes' : 'No'}
+                  </span>
+                  <span style={{
+                    background: profile.activeInChurch ? '#ECFDF5' : '#F1F5F9',
+                    color: profile.activeInChurch ? '#047857' : '#64748B',
+                    border: `1px solid ${profile.activeInChurch ? '#A7F3D0' : '#E2E8F0'}`,
+                    padding: '6px 14px', borderRadius: '16px', fontSize: '13px', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '6px'
+                  }}>
+                    {profile.activeInChurch ? <Check size={14} /> : null} Active Parish Member: {profile.activeInChurch ? 'Yes' : 'No'}
+                  </span>
+                </div>
+                {profile.churchMinistry && (
+                  <p style={{ marginTop: '12px', fontSize: '13.5px', color: '#475467' }}>
+                    <strong>Ministry Involvement:</strong> {profile.churchMinistry}
+                  </p>
+                )}
               </div>
             </div>
 
-            {/* Section 3: Education & Profession */}
-            <div style={{ marginBottom: '40px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+            {/* Section 3: Education & Career */}
+            <div style={{ marginBottom: '40px', background: '#FFFFFF', border: '1px solid #EFEBE4', borderRadius: '16px', padding: '24px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
                 <Briefcase size={20} color="#B88E4C" />
                 <h2 style={{
                   fontFamily: "'Cormorant Garamond', serif",
-                  fontSize: '28px',
+                  fontSize: '26px',
                   fontWeight: 700,
                   color: '#1B2535',
                   margin: 0
@@ -428,64 +549,170 @@ export default function MemberDetail() {
                 </h2>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                <div style={{ background: '#FFFFFF', border: '1px solid #EFEBE4', borderRadius: '12px', padding: '16px' }}>
-                  <span style={{ fontSize: '12px', color: '#8A92A0', display: 'block', marginBottom: '4px' }}>Degrees</span>
-                  <span style={{ fontSize: '15px', fontWeight: 600, color: '#1B2535' }}>{profile.degree || 'M.Arch in Heritage Conservation'}</span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                <div style={{ background: '#FAF8F5', border: '1px solid #EAE5DC', borderRadius: '12px', padding: '14px' }}>
+                  <span style={{ fontSize: '12px', color: '#8A92A0', display: 'block', marginBottom: '4px' }}>Highest Qualification</span>
+                  <span style={{ fontSize: '15px', fontWeight: 600, color: '#1B2535' }}>{profile.highestQualification || '—'}</span>
                 </div>
-                <div style={{ background: '#FFFFFF', border: '1px solid #EFEBE4', borderRadius: '12px', padding: '16px' }}>
-                  <span style={{ fontSize: '12px', color: '#8A92A0', display: 'block', marginBottom: '4px' }}>Profession</span>
-                  <span style={{ fontSize: '15px', fontWeight: 600, color: '#1B2535' }}>{profile.occupation || 'Restoration Architect'}</span>
+                <div style={{ background: '#FAF8F5', border: '1px solid #EAE5DC', borderRadius: '12px', padding: '14px' }}>
+                  <span style={{ fontSize: '12px', color: '#8A92A0', display: 'block', marginBottom: '4px' }}>Degree & Specialization</span>
+                  <span style={{ fontSize: '15px', fontWeight: 600, color: '#1B2535' }}>{[profile.degree, profile.specialization].filter(Boolean).join(' - ') || '—'}</span>
+                </div>
+                <div style={{ background: '#FAF8F5', border: '1px solid #EAE5DC', borderRadius: '12px', padding: '14px' }}>
+                  <span style={{ fontSize: '12px', color: '#8A92A0', display: 'block', marginBottom: '4px' }}>University / College</span>
+                  <span style={{ fontSize: '15px', fontWeight: 600, color: '#1B2535' }}>{[profile.university, profile.college].filter(Boolean).join(' / ') || '—'}</span>
+                </div>
+                <div style={{ background: '#FAF8F5', border: '1px solid #EAE5DC', borderRadius: '12px', padding: '14px' }}>
+                  <span style={{ fontSize: '12px', color: '#8A92A0', display: 'block', marginBottom: '4px' }}>Graduation Year</span>
+                  <span style={{ fontSize: '15px', fontWeight: 600, color: '#1B2535' }}>{profile.graduationYear || '—'}</span>
+                </div>
+                <div style={{ background: '#FAF8F5', border: '1px solid #EAE5DC', borderRadius: '12px', padding: '14px' }}>
+                  <span style={{ fontSize: '12px', color: '#8A92A0', display: 'block', marginBottom: '4px' }}>Occupation / Designation</span>
+                  <span style={{ fontSize: '15px', fontWeight: 600, color: '#1B2535' }}>{[profile.designation, profile.occupation].filter(Boolean).join(' - ') || '—'}</span>
+                </div>
+                <div style={{ background: '#FAF8F5', border: '1px solid #EAE5DC', borderRadius: '12px', padding: '14px' }}>
+                  <span style={{ fontSize: '12px', color: '#8A92A0', display: 'block', marginBottom: '4px' }}>Company & Experience</span>
+                  <span style={{ fontSize: '15px', fontWeight: 600, color: '#1B2535' }}>{[profile.company, profile.experience].filter(Boolean).join(' • ') || '—'}</span>
+                </div>
+                <div style={{ background: '#FAF8F5', border: '1px solid #EAE5DC', borderRadius: '12px', padding: '14px' }}>
+                  <span style={{ fontSize: '12px', color: '#8A92A0', display: 'block', marginBottom: '4px' }}>Annual Income</span>
+                  <span style={{ fontSize: '15px', fontWeight: 600, color: '#1B2535' }}>{profile.annualIncome || '—'}</span>
+                </div>
+                <div style={{ background: '#FAF8F5', border: '1px solid #EAE5DC', borderRadius: '12px', padding: '14px' }}>
+                  <span style={{ fontSize: '12px', color: '#8A92A0', display: 'block', marginBottom: '4px' }}>Work Location</span>
+                  <span style={{ fontSize: '15px', fontWeight: 600, color: '#1B2535' }}>{profile.workLocation || '—'}</span>
                 </div>
               </div>
+
+              {profile.additionalCertifications && (
+                <div style={{ background: '#FAF8F5', border: '1px solid #EAE5DC', borderRadius: '12px', padding: '14px' }}>
+                  <span style={{ fontSize: '12px', color: '#8A92A0', display: 'block', marginBottom: '4px' }}>Additional Certifications</span>
+                  <span style={{ fontSize: '14px', fontWeight: 500, color: '#1B2535' }}>{profile.additionalCertifications}</span>
+                </div>
+              )}
             </div>
 
-            {/* Section 4: Family Background */}
-            <div style={{ marginBottom: '40px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-                <Users size={20} color="#B88E4C" />
+            {/* Section 4: Personal & Lifestyle Attributes */}
+            <div style={{ marginBottom: '40px', background: '#FFFFFF', border: '1px solid #EFEBE4', borderRadius: '16px', padding: '24px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
+                <Award size={20} color="#B88E4C" />
                 <h2 style={{
                   fontFamily: "'Cormorant Garamond', serif",
-                  fontSize: '28px',
+                  fontSize: '26px',
                   fontWeight: 700,
                   color: '#1B2535',
                   margin: 0
                 }}>
-                  Family Background
+                  Personal & Lifestyle Attributes
                 </h2>
               </div>
 
-              <div style={{
-                background: '#1A273D',
-                borderRadius: '16px',
-                padding: '24px',
-                color: '#FFFFFF',
-                display: 'grid',
-                gridTemplateColumns: '1fr 1fr',
-                gap: '24px'
-              }}>
-                <div>
-                  <span style={{ fontSize: '12px', color: '#94A3B8', display: 'block', marginBottom: '6px' }}>Family Status</span>
-                  <p style={{ fontSize: '14px', lineHeight: 1.6, margin: 0, opacity: 0.95 }}>
-                    {profile.familyStatus || DEFAULT_ELEANOR.familyStatus}
-                  </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                <div style={{ background: '#FAF8F5', border: '1px solid #EAE5DC', borderRadius: '12px', padding: '14px' }}>
+                  <span style={{ fontSize: '12px', color: '#8A92A0', display: 'block', marginBottom: '4px' }}>Complexion</span>
+                  <span style={{ fontSize: '14px', fontWeight: 600, color: '#1B2535' }}>{profile.complexion || '—'}</span>
                 </div>
-                <div>
-                  <span style={{ fontSize: '12px', color: '#94A3B8', display: 'block', marginBottom: '6px' }}>Origin</span>
-                  <p style={{ fontSize: '14px', lineHeight: 1.6, margin: 0, opacity: 0.95 }}>
-                    {profile.origin || DEFAULT_ELEANOR.origin}
-                  </p>
+                <div style={{ background: '#FAF8F5', border: '1px solid #EAE5DC', borderRadius: '12px', padding: '14px' }}>
+                  <span style={{ fontSize: '12px', color: '#8A92A0', display: 'block', marginBottom: '4px' }}>Body Type</span>
+                  <span style={{ fontSize: '14px', fontWeight: 600, color: '#1B2535' }}>{profile.bodyType || '—'}</span>
+                </div>
+                <div style={{ background: '#FAF8F5', border: '1px solid #EAE5DC', borderRadius: '12px', padding: '14px' }}>
+                  <span style={{ fontSize: '12px', color: '#8A92A0', display: 'block', marginBottom: '4px' }}>Blood Group</span>
+                  <span style={{ fontSize: '14px', fontWeight: 600, color: '#1B2535' }}>{profile.bloodGroup || '—'}</span>
+                </div>
+                <div style={{ background: '#FAF8F5', border: '1px solid #EAE5DC', borderRadius: '12px', padding: '14px' }}>
+                  <span style={{ fontSize: '12px', color: '#8A92A0', display: 'block', marginBottom: '4px' }}>Physical Status</span>
+                  <span style={{ fontSize: '14px', fontWeight: 600, color: '#1B2535' }}>{profile.physicalStatus || '—'}</span>
+                </div>
+                <div style={{ background: '#FAF8F5', border: '1px solid #EAE5DC', borderRadius: '12px', padding: '14px' }}>
+                  <span style={{ fontSize: '12px', color: '#8A92A0', display: 'block', marginBottom: '4px' }}>Diet Habits</span>
+                  <span style={{ fontSize: '14px', fontWeight: 600, color: '#1B2535' }}>{profile.diet || '—'}</span>
+                </div>
+                <div style={{ background: '#FAF8F5', border: '1px solid #EAE5DC', borderRadius: '12px', padding: '14px' }}>
+                  <span style={{ fontSize: '12px', color: '#8A92A0', display: 'block', marginBottom: '4px' }}>Smoking / Drinking</span>
+                  <span style={{ fontSize: '14px', fontWeight: 600, color: '#1B2535' }}>
+                    {[profile.smoking ? `Smoking: ${profile.smoking}` : null, profile.drinking ? `Drinking: ${profile.drinking}` : null].filter(Boolean).join(' • ') || '—'}
+                  </span>
+                </div>
+              </div>
+
+              {profile.languagesKnown && profile.languagesKnown.length > 0 && (
+                <div style={{ marginTop: '16px' }}>
+                  <span style={{ fontSize: '12px', color: '#8A92A0', display: 'block', marginBottom: '8px' }}>Languages Known</span>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    {profile.languagesKnown.map((lang, i) => (
+                      <span key={i} style={{ background: '#F3F0E9', border: '1px solid #EAE5DC', padding: '4px 12px', borderRadius: '12px', fontSize: '13px', fontWeight: 500, color: '#1B2535' }}>
+                        {lang}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Section 5: Family Details */}
+            <div style={{ marginBottom: '40px', background: '#FFFFFF', border: '1px solid #EFEBE4', borderRadius: '16px', padding: '24px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
+                <Users size={20} color="#B88E4C" />
+                <h2 style={{
+                  fontFamily: "'Cormorant Garamond', serif",
+                  fontSize: '26px',
+                  fontWeight: 700,
+                  color: '#1B2535',
+                  margin: 0
+                }}>
+                  Family Details
+                </h2>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                <div style={{ background: '#FAF8F5', border: '1px solid #EAE5DC', borderRadius: '12px', padding: '14px' }}>
+                  <span style={{ fontSize: '12px', color: '#8A92A0', display: 'block', marginBottom: '4px' }}>Father's Details</span>
+                  <span style={{ fontSize: '15px', fontWeight: 600, color: '#1B2535' }}>
+                    {profile.fatherName || '—'} {profile.fatherOccupation ? `(${profile.fatherOccupation})` : ''}
+                  </span>
+                </div>
+                <div style={{ background: '#FAF8F5', border: '1px solid #EAE5DC', borderRadius: '12px', padding: '14px' }}>
+                  <span style={{ fontSize: '12px', color: '#8A92A0', display: 'block', marginBottom: '4px' }}>Mother's Details</span>
+                  <span style={{ fontSize: '15px', fontWeight: 600, color: '#1B2535' }}>
+                    {profile.motherName || '—'} {profile.motherOccupation ? `(${profile.motherOccupation})` : ''}
+                  </span>
+                </div>
+                <div style={{ background: '#FAF8F5', border: '1px solid #EAE5DC', borderRadius: '12px', padding: '14px' }}>
+                  <span style={{ fontSize: '12px', color: '#8A92A0', display: 'block', marginBottom: '4px' }}>Family Type & Status</span>
+                  <span style={{ fontSize: '15px', fontWeight: 600, color: '#1B2535' }}>
+                    {[profile.familyType, profile.familyStatus].filter(Boolean).join(' • ') || '—'}
+                  </span>
+                </div>
+                <div style={{ background: '#FAF8F5', border: '1px solid #EAE5DC', borderRadius: '12px', padding: '14px' }}>
+                  <span style={{ fontSize: '12px', color: '#8A92A0', display: 'block', marginBottom: '4px' }}>Family Values</span>
+                  <span style={{ fontSize: '15px', fontWeight: 600, color: '#1B2535' }}>{profile.familyValues || '—'}</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div style={{ background: '#FAF8F5', border: '1px solid #EAE5DC', borderRadius: '12px', padding: '14px' }}>
+                  <span style={{ fontSize: '12px', color: '#8A92A0', display: 'block', marginBottom: '4px' }}>Brothers</span>
+                  <span style={{ fontSize: '14px', fontWeight: 600, color: '#1B2535' }}>
+                    {profile.brothers || 0} Brother(s) {profile.marriedBrothers ? `(${profile.marriedBrothers} Married)` : ''}
+                  </span>
+                </div>
+                <div style={{ background: '#FAF8F5', border: '1px solid #EAE5DC', borderRadius: '12px', padding: '14px' }}>
+                  <span style={{ fontSize: '12px', color: '#8A92A0', display: 'block', marginBottom: '4px' }}>Sisters</span>
+                  <span style={{ fontSize: '14px', fontWeight: 600, color: '#1B2535' }}>
+                    {profile.sisters || 0} Sister(s) {profile.marriedSisters ? `(${profile.marriedSisters} Married)` : ''}
+                  </span>
                 </div>
               </div>
             </div>
 
-            {/* Section 5: Partner Preferences */}
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+            {/* Section 6: Partner Preferences */}
+            <div style={{ background: '#FFFFFF', border: '1px solid #EFEBE4', borderRadius: '16px', padding: '24px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
                 <Heart size={20} color="#B88E4C" />
                 <h2 style={{
                   fontFamily: "'Cormorant Garamond', serif",
-                  fontSize: '28px',
+                  fontSize: '26px',
                   fontWeight: 700,
                   color: '#1B2535',
                   margin: 0
@@ -494,22 +721,30 @@ export default function MemberDetail() {
                 </h2>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }} className="pref-grid">
-                <div style={{ background: '#FFFFFF', border: '1px solid #EFEBE4', borderRadius: '12px', padding: '16px', textAlign: 'center' }}>
-                  <span style={{ fontSize: '12px', color: '#8A92A0', display: 'block', marginBottom: '4px' }}>Age</span>
-                  <span style={{ fontSize: '15px', fontWeight: 600, color: '#1B2535' }}>{profile.preferredAge || '27 - 38'}</span>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                <div style={{ background: '#FAF8F5', border: '1px solid #EAE5DC', borderRadius: '12px', padding: '14px', textAlign: 'center' }}>
+                  <span style={{ fontSize: '12px', color: '#8A92A0', display: 'block', marginBottom: '4px' }}>Preferred Age</span>
+                  <span style={{ fontSize: '15px', fontWeight: 600, color: '#1B2535' }}>
+                    {(profile.preferredAgeFrom || profile.preferredAgeTo) ? `${profile.preferredAgeFrom || 18} - ${profile.preferredAgeTo || 60} Yrs` : 'Open'}
+                  </span>
                 </div>
-                <div style={{ background: '#FFFFFF', border: '1px solid #EFEBE4', borderRadius: '12px', padding: '16px', textAlign: 'center' }}>
-                  <span style={{ fontSize: '12px', color: '#8A92A0', display: 'block', marginBottom: '4px' }}>Height</span>
-                  <span style={{ fontSize: '15px', fontWeight: 600, color: '#1B2535' }}>{profile.preferredHeight || "5'10\" +"}</span>
+                <div style={{ background: '#FAF8F5', border: '1px solid #EAE5DC', borderRadius: '12px', padding: '14px', textAlign: 'center' }}>
+                  <span style={{ fontSize: '12px', color: '#8A92A0', display: 'block', marginBottom: '4px' }}>Preferred Height</span>
+                  <span style={{ fontSize: '15px', fontWeight: 600, color: '#1B2535' }}>
+                    {(profile.preferredHeightFrom || profile.preferredHeightTo) ? `${profile.preferredHeightFrom || ''} to ${profile.preferredHeightTo || ''}` : 'Open'}
+                  </span>
                 </div>
-                <div style={{ background: '#FFFFFF', border: '1px solid #EFEBE4', borderRadius: '12px', padding: '16px', textAlign: 'center' }}>
-                  <span style={{ fontSize: '12px', color: '#8A92A0', display: 'block', marginBottom: '4px' }}>Education</span>
-                  <span style={{ fontSize: '15px', fontWeight: 600, color: '#1B2535' }}>{profile.preferredEducation || 'Post-Grad'}</span>
+                <div style={{ background: '#FAF8F5', border: '1px solid #EAE5DC', borderRadius: '12px', padding: '14px', textAlign: 'center' }}>
+                  <span style={{ fontSize: '12px', color: '#8A92A0', display: 'block', marginBottom: '4px' }}>Preferred Education</span>
+                  <span style={{ fontSize: '14px', fontWeight: 600, color: '#1B2535' }}>
+                    {Array.isArray(profile.preferredEducation) && profile.preferredEducation.length > 0 ? profile.preferredEducation.join(', ') : 'Open'}
+                  </span>
                 </div>
-                <div style={{ background: '#FFFFFF', border: '1px solid #EFEBE4', borderRadius: '12px', padding: '16px', textAlign: 'center' }}>
-                  <span style={{ fontSize: '12px', color: '#8A92A0', display: 'block', marginBottom: '4px' }}>Church</span>
-                  <span style={{ fontSize: '15px', fontWeight: 600, color: '#1B2535' }}>{profile.preferredChurch || 'Anglican/Catholic'}</span>
+                <div style={{ background: '#FAF8F5', border: '1px solid #EAE5DC', borderRadius: '12px', padding: '14px', textAlign: 'center' }}>
+                  <span style={{ fontSize: '12px', color: '#8A92A0', display: 'block', marginBottom: '4px' }}>Preferred Denomination</span>
+                  <span style={{ fontSize: '14px', fontWeight: 600, color: '#1B2535' }}>
+                    {Array.isArray(profile.preferredDenomination) && profile.preferredDenomination.length > 0 ? profile.preferredDenomination.join(', ') : 'Open'}
+                  </span>
                 </div>
               </div>
             </div>
@@ -517,6 +752,108 @@ export default function MemberDetail() {
           </div>
 
         </div>
+
+      {/* Contact Details Request Confirmation Modal */}
+      {confirmModalOpen && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(27, 37, 53, 0.6)',
+          backdropFilter: 'blur(4px)',
+          display: 'grid',
+          placeItems: 'center',
+          zIndex: 1000,
+          padding: '24px'
+        }}>
+          <div style={{
+            background: '#FFFFFF',
+            borderRadius: '24px',
+            padding: '32px',
+            maxWidth: '480px',
+            width: '100%',
+            boxShadow: '0 20px 50px rgba(0,0,0,0.2)',
+            border: '1px solid #EFEBE4',
+            textAlign: 'center'
+          }}>
+            <div style={{
+              width: '60px',
+              height: '60px',
+              borderRadius: '50%',
+              background: '#FAF8F5',
+              border: '1px solid #EAE5DC',
+              display: 'grid',
+              placeItems: 'center',
+              margin: '0 auto 20px auto',
+              color: '#1A273D'
+            }}>
+              <ShieldCheck size={32} color="#C59B4E" />
+            </div>
+
+            <h3 style={{
+              fontFamily: "'Cormorant Garamond', serif",
+              fontSize: '26px',
+              fontWeight: 700,
+              color: '#1B2535',
+              margin: '0 0 10px 0'
+            }}>
+              Request Contact Details?
+            </h3>
+
+            <p style={{ fontSize: '14px', color: '#667085', lineHeight: 1.6, margin: '0 0 24px 0' }}>
+              Your request for <strong>{[profile.firstName, profile.lastName].filter(Boolean).join(' ') || 'Member'}</strong>'s phone number, email address, and parish location will be submitted to the SJC Matrimony administrative security team for verification.
+            </p>
+
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+              <button
+                onClick={() => setConfirmModalOpen(false)}
+                disabled={submittingRequest}
+                style={{
+                  padding: '12px 24px',
+                  borderRadius: '12px',
+                  border: '1px solid #EAE5DC',
+                  background: '#FFFFFF',
+                  color: '#1B2535',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={submitContactRequest}
+                disabled={submittingRequest}
+                style={{
+                  padding: '12px 24px',
+                  borderRadius: '12px',
+                  border: 'none',
+                  background: 'linear-gradient(135deg, #1A273D 0%, #2A3B56 100%)',
+                  color: '#FFFFFF',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+              >
+                {submittingRequest ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    <span>Submitting...</span>
+                  </>
+                ) : (
+                  <>
+                    <PhoneCall size={16} />
+                    <span>Confirm Request</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       </div>
     </div>

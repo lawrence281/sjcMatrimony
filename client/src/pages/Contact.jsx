@@ -22,8 +22,8 @@ export default function Contact() {
                 <div className="info-icon-modern"><Mail size={24} /></div>
                 <div className="info-text-modern">
                   <h4>Email</h4>
-                  <p>support@dkingite.com</p>
-                  <p>ops@dkingite.com</p>
+                  <p>support@sjcmatrimony.org</p>
+                  <p>info@sjcmatrimony.org</p>
                 </div>
               </div>
 
@@ -31,26 +31,26 @@ export default function Contact() {
                 <div className="info-icon-modern"><Phone size={24} /></div>
                 <div className="info-text-modern">
                   <h4>Hotline</h4>
-                  <p>+1 (888) SKY-FIRE</p>
-                  <p>Mon - Fri, 9am - 6pm EST</p>
+                  <p>+91 44 2468 1357</p>
+                  <p>Mon - Sat, 9am - 6pm IST</p>
                 </div>
               </div>
 
               <div className="info-item-card">
                 <div className="info-icon-modern"><MapPin size={24} /></div>
                 <div className="info-text-modern">
-                  <h4>Headquarters</h4>
-                  <p>123 Pyrotechnic Ave</p>
-                  <p>Las Vegas, NV 89101</p>
+                  <h4>Office</h4>
+                  <p>St. Joseph Cathedral Complex</p>
+                  <p>Chennai, TN, India</p>
                 </div>
               </div>
 
               <div className="info-item-card">
                 <div className="info-icon-modern"><Instagram size={24} /></div>
                 <div className="info-text-modern">
-                  <h4>{t('social_media')}</h4>
-                  <p>@dkingite_fire</p>
-                  <p>@dkingite_ops</p>
+                  <h4>Social Media</h4>
+                  <p>@sjcmatrimony</p>
+                  <p>fb.com/sjcmatrimony</p>
                 </div>
               </div>
             </div>

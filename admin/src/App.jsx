@@ -9,6 +9,8 @@ import { AuthProvider, useAuth } from './context/AuthContext'
 import { ThemeProvider } from './context/ThemeContext'
 import './index.css'
 
+import ContactRequests from './pages/ContactRequests'
+
 function ProtectedLayout() {
   const { admin } = useAuth()
   if (!admin) return <Navigate to="/login" replace />
@@ -19,6 +21,7 @@ function ProtectedLayout() {
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/users" element={<Users />} />
+          <Route path="/contact-requests" element={<ContactRequests />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
