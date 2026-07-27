@@ -20,8 +20,9 @@ import SafetyRules from './pages/SafetyRules'
 import Contact from './pages/Contact'
 import PrivacyPolicy from './pages/PrivacyPolicy'
 import TermsOfService from './pages/TermsOfService'
-import './index.css'
+import ApprovedContactRequests from './pages/ApprovedContactRequests'
 import { LanguageProvider } from './context/LanguageContext'
+import './index.css'
 
 function ScrollToTopOnRouteChange() {
   const { pathname } = useLocation()
@@ -88,6 +89,7 @@ export default function App() {
               <Route path="/profile/preferences" element={<ProtectedRoute><PartnerPreference /></ProtectedRoute>} />
               <Route path="/profile/gallery" element={<ProtectedRoute><Gallery /></ProtectedRoute>} />
               <Route path="/profile/documents" element={<ProtectedRoute><Documents /></ProtectedRoute>} />
+              <Route path="/my-contact-requests" element={<ProtectedRoute><ApprovedContactRequests /></ProtectedRoute>} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </main>

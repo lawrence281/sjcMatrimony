@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, LogOut, Sparkles, Sun, Moon, Users } from 'lucide-react'
+import { LayoutDashboard, LogOut, Sparkles, Sun, Moon, Users, PhoneCall } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 
@@ -25,6 +25,10 @@ export default function Sidebar() {
         <NavLink to="/users">
           <Users size={17} />
           Profile Management
+        </NavLink>
+        <NavLink to="/contact-requests">
+          <PhoneCall size={17} />
+          Contact Requests
         </NavLink>
       </nav>
 

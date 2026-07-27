@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { Zap, Mail, Lock, ArrowRight, User } from 'lucide-react'
+import { Sparkles, Mail, Lock, ArrowRight, User } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { MESSAGES } from '../constants'
 
@@ -34,12 +34,25 @@ export default function Login() {
   return (
     <div className="login-page">
       <div className="login-card">
-        <div className="login-header">
-          <div className="login-logo">
-            <Zap size={32} fill="var(--accent)" />
+        <div className="login-header" style={{ textAlign: 'center', marginBottom: '28px' }}>
+          <div style={{
+            width: '54px',
+            height: '54px',
+            borderRadius: '14px',
+            background: 'linear-gradient(135deg, #1A273D 0%, #2A3B56 100%)',
+            display: 'grid',
+            placeItems: 'center',
+            margin: '0 auto 16px auto',
+            boxShadow: '0 4px 12px rgba(26, 39, 61, 0.2)'
+          }}>
+            <Sparkles size={26} color="#C59B4E" fill="#C59B4E" />
           </div>
-          <h1>{isRegister ? 'Join DK Ignite' : 'Secure Entry'}</h1>
-          <p>{isRegister ? 'Start your explosive journey' : 'Access your professional account'}</p>
+          <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '32px', fontWeight: 700, color: '#1B2535', margin: '0 0 6px 0' }}>
+            {isRegister ? 'Join SJC Matrimony' : 'Welcome Back'}
+          </h1>
+          <p style={{ fontSize: '14px', color: '#667085', margin: 0 }}>
+            {isRegister ? 'Begin your journey to a sacred union' : 'Access your matrimony profile'}
+          </p>
         </div>
 
         <form onSubmit={handleSubmit} className="login-form">

@@ -65,7 +65,7 @@ export default function Navbar() {
           <span style={{ fontWeight: 700, color: '#1B2535' }}>SJC Matrimony</span>
         </Link>
 
-        {/* Center Links (Logo links to Home; center links contain Members & Subscription) */}
+        {/* Center Links */}
         <div className="navbar-links hide-on-mobile" style={{ display: 'flex', gap: '32px', alignItems: 'center' }}>
           <Link to="/browse" style={navItemStyle('/browse')}>
             Members
@@ -73,6 +73,11 @@ export default function Navbar() {
           <Link to="/subscription" style={navItemStyle('/subscription')}>
             Subscription
           </Link>
+          {user && (
+            <Link to="/my-contact-requests" style={navItemStyle('/my-contact-requests')}>
+              Approved Contacts
+            </Link>
+          )}
         </div>
 
         {/* Right Actions */}
@@ -113,6 +118,7 @@ export default function Navbar() {
             <Link 
               to="/profile" 
               title="View My Profile"
+              className="navbar-profile-btn"
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -126,12 +132,15 @@ export default function Navbar() {
                 transition: 'all 0.2s ease-in-out'
               }}
             >
-              <span style={{ 
-                fontSize: '13.5px', 
-                fontWeight: 600, 
-                color: isActive('/profile') ? '#FFFFFF' : '#1B2535',
-                whiteSpace: 'nowrap'
-              }}>
+              <span 
+                className="hide-on-mobile"
+                style={{ 
+                  fontSize: '13.5px', 
+                  fontWeight: 600, 
+                  color: isActive('/profile') ? '#FFFFFF' : '#1B2535',
+                  whiteSpace: 'nowrap'
+                }}
+              >
                 Hi, {user?.firstName || user?.name?.split(' ')[0] || 'Member'} 👋
               </span>
               <div style={{
@@ -168,12 +177,18 @@ export default function Navbar() {
       {/* Mobile Dropdown Menu */}
       {mobileMenuOpen && (
         <div className="mobile-menu-drawer" style={{
+          position: 'absolute',
+          top: '100%',
+          left: 0,
+          right: 0,
           background: '#FFFFFF',
           borderBottom: '1px solid #EAE5DC',
           padding: '20px 24px',
           display: 'flex',
           flexDirection: 'column',
-          gap: '16px'
+          gap: '16px',
+          boxShadow: '0 12px 32px rgba(27, 37, 53, 0.08)',
+          zIndex: 350
         }}>
           <Link to="/browse" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: '15px', fontWeight: isActive('/browse') ? 700 : 500, color: isActive('/browse') ? '#B88E4C' : '#1B2535', textDecoration: 'none' }}>
             Members
@@ -181,6 +196,11 @@ export default function Navbar() {
           <Link to="/subscription" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: '15px', fontWeight: isActive('/subscription') ? 700 : 500, color: isActive('/subscription') ? '#B88E4C' : '#1B2535', textDecoration: 'none' }}>
             Subscription
           </Link>
+          {user && (
+            <Link to="/my-contact-requests" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: '15px', fontWeight: isActive('/my-contact-requests') ? 700 : 500, color: isActive('/my-contact-requests') ? '#B88E4C' : '#1B2535', textDecoration: 'none' }}>
+              Approved Contacts
+            </Link>
+          )}
           <Link to="/profile" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: '15px', fontWeight: isActive('/profile') ? 700 : 500, color: isActive('/profile') ? '#B88E4C' : '#1B2535', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <User size={18} color="#B88E4C" />
             <span>My Profile</span>

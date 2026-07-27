@@ -236,7 +236,7 @@ export default function EditProfile() {
                 1. Basic Information
               </h2>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '18px' }} className="edit-form-grid">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               <div>
                 <label style={labelStyle}>Profile For</label>
                 <select name="profileFor" value={formData.profileFor} onChange={handleChange} style={inputStyle}>
@@ -283,7 +283,7 @@ export default function EditProfile() {
                 2. Religious Information
               </h2>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '18px' }} className="edit-form-grid">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
                 <label style={labelStyle}>Religion</label>
                 <input type="text" name="religion" value={formData.religion} onChange={handleChange} style={inputStyle} placeholder="Religion" />
@@ -300,7 +300,7 @@ export default function EditProfile() {
                 <label style={labelStyle}>Local Church Name</label>
                 <input type="text" name="church" value={formData.church} onChange={handleChange} style={inputStyle} placeholder="Church name" />
               </div>
-              <div style={{ gridColumn: 'span 2' }}>
+              <div className="col-span-1 md:col-span-2">
                 <label style={labelStyle}>Church Address</label>
                 <input type="text" name="churchAddress" value={formData.churchAddress} onChange={handleChange} style={inputStyle} placeholder="Full address of local church" />
               </div>
@@ -309,7 +309,7 @@ export default function EditProfile() {
             {/* Sacraments & Church Activities Checkboxes */}
             <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px dashed #EAE5DC' }}>
               <label style={{ ...labelStyle, marginBottom: '12px' }}>Sacraments & Parish Involvement</label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }} className="edit-form-grid">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13.5px', color: '#1B2535' }}>
                   <input type="checkbox" name="baptized" checked={formData.baptized} onChange={handleChange} style={{ width: '16px', height: '16px' }} />
                   <span>Baptized</span>
@@ -342,7 +342,7 @@ export default function EditProfile() {
                 3. Personal & Physical Attributes
               </h2>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '18px' }} className="edit-form-grid">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               <div>
                 <label style={labelStyle}>Marital Status</label>
                 <select name="maritalStatus" value={formData.maritalStatus} onChange={handleChange} style={inputStyle}>
@@ -446,7 +446,7 @@ export default function EditProfile() {
                 4. Education Details
               </h2>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '18px' }} className="edit-form-grid">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               <div>
                 <label style={labelStyle}>Highest Qualification</label>
                 <input type="text" name="highestQualification" value={formData.highestQualification} onChange={handleChange} style={inputStyle} placeholder="e.g. Master's, Bachelor's" />
@@ -471,7 +471,7 @@ export default function EditProfile() {
                 <label style={labelStyle}>Graduation Year</label>
                 <input type="number" name="graduationYear" value={formData.graduationYear || ''} onChange={handleChange} style={inputStyle} placeholder="Year (e.g. 2020)" />
               </div>
-              <div style={{ gridColumn: 'span 3' }}>
+              <div className="col-span-1 md:col-span-2 lg:col-span-3">
                 <label style={labelStyle}>Additional Certifications</label>
                 <input type="text" name="additionalCertifications" value={formData.additionalCertifications} onChange={handleChange} style={inputStyle} placeholder="Certifications, diplomas, training" />
               </div>
@@ -486,7 +486,7 @@ export default function EditProfile() {
                 5. Career & Occupation
               </h2>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '18px' }} className="edit-form-grid">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               <div>
                 <label style={labelStyle}>Occupation / Field</label>
                 <input type="text" name="occupation" value={formData.occupation} onChange={handleChange} style={inputStyle} placeholder="e.g. Software Engineer, Doctor" />
@@ -522,7 +522,7 @@ export default function EditProfile() {
                 6. Family Background
               </h2>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '18px' }} className="edit-form-grid">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
                 <label style={labelStyle}>Father's Name</label>
                 <input type="text" name="fatherName" value={formData.fatherName} onChange={handleChange} style={inputStyle} placeholder="Father's full name" />
@@ -569,7 +569,7 @@ export default function EditProfile() {
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px', marginTop: '16px', paddingTop: '16px', borderTop: '1px dashed #EAE5DC' }} className="edit-form-grid">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 pt-4 border-t border-dashed border-[#EAE5DC]">
               <div>
                 <label style={labelStyle}>No. of Brothers</label>
                 <input type="number" name="brothers" min="0" value={formData.brothers} onChange={handleChange} style={inputStyle} />
@@ -597,7 +597,7 @@ export default function EditProfile() {
                 7. Address & Location
               </h2>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '18px' }} className="edit-form-grid">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               <div>
                 <label style={labelStyle}>Country</label>
                 <input type="text" name="country" value={formData.country} onChange={handleChange} style={inputStyle} placeholder="Country" />
@@ -622,7 +622,7 @@ export default function EditProfile() {
                 <label style={labelStyle}>Pincode</label>
                 <input type="text" name="pincode" value={formData.pincode} onChange={handleChange} style={inputStyle} placeholder="Postal pincode" />
               </div>
-              <div style={{ gridColumn: 'span 3' }}>
+              <div className="col-span-1 md:col-span-2 lg:col-span-3">
                 <label style={labelStyle}>Residential Address</label>
                 <textarea name="address" rows="2" value={formData.address} onChange={handleChange} style={{ ...inputStyle, resize: 'vertical' }} placeholder="Full street address" />
               </div>
@@ -658,7 +658,7 @@ export default function EditProfile() {
                 9. Partner Preferences
               </h2>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '18px' }} className="edit-form-grid">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div>
                 <label style={labelStyle}>Preferred Age From</label>
                 <input type="number" name="preferredAgeFrom" min="18" max="70" value={formData.preferredAgeFrom || 18} onChange={handleChange} style={inputStyle} />
@@ -679,21 +679,21 @@ export default function EditProfile() {
           </div>
 
           {/* UNIFIED SAVE ALL BUTTON */}
-          <div style={{
-            position: 'sticky',
-            bottom: '24px',
-            background: 'rgba(255, 255, 255, 0.95)',
-            backdropFilter: 'blur(12px)',
-            border: '1px solid #EFEBE4',
-            borderRadius: '20px',
-            padding: '16px 28px',
-            boxShadow: '0 12px 40px rgba(0,0,0,0.12)',
-            display: 'flex',
-            justify: 'space-between',
-            alignItems: 'center',
-            zIndex: 100
-          }}>
-            <div>
+          <div 
+            className="flex flex-col sm:flex-row gap-4 sm:gap-0 justify-between items-center"
+            style={{
+              position: 'sticky',
+              bottom: '24px',
+              background: 'rgba(255, 255, 255, 0.95)',
+              backdropFilter: 'blur(12px)',
+              border: '1px solid #EFEBE4',
+              borderRadius: '20px',
+              padding: '16px 28px',
+              boxShadow: '0 12px 40px rgba(0,0,0,0.12)',
+              zIndex: 100
+            }}
+          >
+            <div style={{ textAlign: 'center', width: '100%', display: 'block' }} className="sm:text-left">
               <span style={{ fontSize: '14px', fontWeight: 700, color: '#1B2535', display: 'block' }}>Ready to update your profile?</span>
               <span style={{ fontSize: '12px', color: '#667085' }}>One click saves all 9 sections to your account.</span>
             </div>
@@ -712,13 +712,16 @@ export default function EditProfile() {
                 cursor: saving ? 'wait' : 'pointer',
                 display: 'inline-flex',
                 alignItems: 'center',
+                justifyContent: 'center',
                 gap: '10px',
                 boxShadow: '0 6px 20px rgba(197, 155, 78, 0.35)',
-                transition: 'transform 0.2s, box-shadow 0.2s'
+                transition: 'transform 0.2s, box-shadow 0.2s',
+                width: '100%'
               }}
+              className="sm:w-auto"
             >
               {saving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
-              <span>{saving ? 'Saving All Changes...' : 'Save Complete Profile'}</span>
+              <span style={{ whiteSpace: 'nowrap' }}>{saving ? 'Saving All Changes...' : 'Save Complete Profile'}</span>
             </button>
           </div>
 

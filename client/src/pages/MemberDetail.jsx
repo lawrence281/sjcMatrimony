@@ -10,9 +10,9 @@ export default function MemberDetail() {
   const [loading, setLoading] = useState(true)
   const [errorState, setErrorState] = useState(false)
   const [activePhoto, setActivePhoto] = useState('')
-  const [interestSent, setInterestSent] = useState(false)
-  const [messageSent, setMessageSent] = useState(false)
-  const [contactRequested, setContactRequested] = useState(false)
+  const [requestStatus, setRequestStatus] = useState('None') // 'None', 'Pending', 'Approved', 'Rejected'
+  const [confirmModalOpen, setConfirmModalOpen] = useState(false)
+  const [submittingRequest, setSubmittingRequest] = useState(false)
 
   useEffect(() => {
     if (id) {
@@ -29,6 +29,16 @@ export default function MemberDetail() {
         const p = res.data.profile
         setProfile(p)
         setActivePhoto(p.profileImage || '')
+
+        // Fetch Contact Request status if logged in
+        try {
+          const statusRes = await api.get(`/contact-requests/status/${id}`)
+          if (statusRes.data && statusRes.data.success) {
+            setRequestStatus(statusRes.data.status || 'None')
+          }
+        } catch (e) {
+          setRequestStatus('None')
+        }
       } else {
         setErrorState(true)
       }
@@ -40,9 +50,20 @@ export default function MemberDetail() {
     }
   }
 
-  const handleContactRequest = () => {
-    setContactRequested(true)
-    toast.success(`Contact details request sent to ${profile?.firstName || 'Member'}!`)
+  const submitContactRequest = async () => {
+    setSubmittingRequest(true)
+    try {
+      const res = await api.post(`/contact-requests/request/${id}`)
+      if (res.data && res.data.success) {
+        toast.success(res.data.message || 'Contact details request submitted for admin review!')
+        setRequestStatus('Pending')
+        setConfirmModalOpen(false)
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to submit contact request')
+    } finally {
+      setSubmittingRequest(false)
+    }
   }
 
   if (loading) {
@@ -103,12 +124,7 @@ export default function MemberDetail() {
           </Link>
         </div>
 
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: '380px 1fr',
-          gap: '40px',
-          alignItems: 'start'
-        }} className="profile-detail-grid">
+        <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-10 items-start profile-detail-grid">
 
           {/* LEFT COLUMN: PHOTOS & ACTIONS & QUICK OVERVIEW */}
           <div>
@@ -171,32 +187,108 @@ export default function MemberDetail() {
               </div>
             )}
 
-            {/* Primary Action Button */}
+            {/* Primary Action Button / Contact Request Status */}
             <div style={{ marginBottom: '32px' }}>
-              <button 
-                onClick={handleContactRequest}
-                disabled={contactRequested}
-                style={{
+              {requestStatus === 'None' && (
+                <button 
+                  onClick={() => setConfirmModalOpen(true)}
+                  style={{
+                    width: '100%',
+                    padding: '14px',
+                    borderRadius: '12px',
+                    border: 'none',
+                    background: '#1A273D',
+                    color: '#FFFFFF',
+                    fontSize: '15px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    boxShadow: '0 4px 16px rgba(26, 39, 61, 0.2)',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  <PhoneCall size={18} />
+                  <span>Request Contact Details</span>
+                </button>
+              )}
+
+              {requestStatus === 'Pending' && (
+                <div style={{
                   width: '100%',
-                  padding: '14px',
+                  padding: '14px 16px',
                   borderRadius: '12px',
-                  border: 'none',
-                  background: contactRequested ? '#059669' : '#1A273D',
-                  color: '#FFFFFF',
-                  fontSize: '15px',
+                  background: '#FFFBEB',
+                  border: '1px solid #FDE68A',
+                  color: '#B45309',
+                  fontSize: '14px',
                   fontWeight: 600,
-                  cursor: contactRequested ? 'default' : 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: '8px',
-                  boxShadow: '0 4px 16px rgba(26, 39, 61, 0.2)',
-                  transition: 'all 0.2s'
-                }}
-              >
-                <PhoneCall size={18} />
-                <span>{contactRequested ? 'Contact Request Sent' : 'Request Contact Info'}</span>
-              </button>
+                  textAlign: 'center'
+                }}>
+                  <Loader2 size={16} className="animate-spin" />
+                  <span>Request Pending Admin Review</span>
+                </div>
+              )}
+
+              {requestStatus === 'Rejected' && (
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    borderRadius: '12px',
+                    background: '#FEF2F2',
+                    border: '1px solid #FCA5A5',
+                    color: '#DC2626',
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    marginBottom: '8px'
+                  }}>
+                    <ShieldCheck size={16} />
+                    <span>Request Declined by Admin</span>
+                  </div>
+                  <button 
+                    onClick={() => setConfirmModalOpen(true)}
+                    style={{ background: 'none', border: 'none', color: '#1B2535', fontSize: '13px', textDecoration: 'underline', cursor: 'pointer', fontWeight: 600 }}
+                  >
+                    Re-submit Contact Request
+                  </button>
+                </div>
+              )}
+
+              {requestStatus === 'Approved' && (
+                <Link
+                  to="/my-contact-requests"
+                  style={{
+                    width: '100%',
+                    padding: '14px',
+                    borderRadius: '12px',
+                    background: 'linear-gradient(135deg, #059669 0%, #10B981 100%)',
+                    color: '#FFFFFF',
+                    fontSize: '15px',
+                    fontWeight: 700,
+                    textDecoration: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    boxShadow: '0 4px 16px rgba(5, 150, 105, 0.25)',
+                    textAlign: 'center'
+                  }}
+                >
+                  <UserCheck size={18} />
+                  <span>View Approved Contact Details</span>
+                </Link>
+              )}
             </div>
 
             {/* Quick Overview Card */}
@@ -369,7 +461,7 @@ export default function MemberDetail() {
                 </h2>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
                 <div style={{ background: '#FAF8F5', border: '1px solid #EAE5DC', borderRadius: '12px', padding: '14px' }}>
                   <span style={{ fontSize: '12px', color: '#8A92A0', display: 'block', marginBottom: '4px' }}>Religion</span>
                   <span style={{ fontSize: '15px', fontWeight: 600, color: '#1B2535' }}>{profile.religion || 'Christian'}</span>
@@ -457,7 +549,7 @@ export default function MemberDetail() {
                 </h2>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                 <div style={{ background: '#FAF8F5', border: '1px solid #EAE5DC', borderRadius: '12px', padding: '14px' }}>
                   <span style={{ fontSize: '12px', color: '#8A92A0', display: 'block', marginBottom: '4px' }}>Highest Qualification</span>
                   <span style={{ fontSize: '15px', fontWeight: 600, color: '#1B2535' }}>{profile.highestQualification || '—'}</span>
@@ -515,7 +607,7 @@ export default function MemberDetail() {
                 </h2>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 <div style={{ background: '#FAF8F5', border: '1px solid #EAE5DC', borderRadius: '12px', padding: '14px' }}>
                   <span style={{ fontSize: '12px', color: '#8A92A0', display: 'block', marginBottom: '4px' }}>Complexion</span>
                   <span style={{ fontSize: '14px', fontWeight: 600, color: '#1B2535' }}>{profile.complexion || '—'}</span>
@@ -573,7 +665,7 @@ export default function MemberDetail() {
                 </h2>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                 <div style={{ background: '#FAF8F5', border: '1px solid #EAE5DC', borderRadius: '12px', padding: '14px' }}>
                   <span style={{ fontSize: '12px', color: '#8A92A0', display: 'block', marginBottom: '4px' }}>Father's Details</span>
                   <span style={{ fontSize: '15px', fontWeight: 600, color: '#1B2535' }}>
@@ -598,7 +690,7 @@ export default function MemberDetail() {
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div style={{ background: '#FAF8F5', border: '1px solid #EAE5DC', borderRadius: '12px', padding: '14px' }}>
                   <span style={{ fontSize: '12px', color: '#8A92A0', display: 'block', marginBottom: '4px' }}>Brothers</span>
                   <span style={{ fontSize: '14px', fontWeight: 600, color: '#1B2535' }}>
@@ -629,7 +721,7 @@ export default function MemberDetail() {
                 </h2>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }} className="pref-grid">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                 <div style={{ background: '#FAF8F5', border: '1px solid #EAE5DC', borderRadius: '12px', padding: '14px', textAlign: 'center' }}>
                   <span style={{ fontSize: '12px', color: '#8A92A0', display: 'block', marginBottom: '4px' }}>Preferred Age</span>
                   <span style={{ fontSize: '15px', fontWeight: 600, color: '#1B2535' }}>
@@ -660,6 +752,108 @@ export default function MemberDetail() {
           </div>
 
         </div>
+
+      {/* Contact Details Request Confirmation Modal */}
+      {confirmModalOpen && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(27, 37, 53, 0.6)',
+          backdropFilter: 'blur(4px)',
+          display: 'grid',
+          placeItems: 'center',
+          zIndex: 1000,
+          padding: '24px'
+        }}>
+          <div style={{
+            background: '#FFFFFF',
+            borderRadius: '24px',
+            padding: '32px',
+            maxWidth: '480px',
+            width: '100%',
+            boxShadow: '0 20px 50px rgba(0,0,0,0.2)',
+            border: '1px solid #EFEBE4',
+            textAlign: 'center'
+          }}>
+            <div style={{
+              width: '60px',
+              height: '60px',
+              borderRadius: '50%',
+              background: '#FAF8F5',
+              border: '1px solid #EAE5DC',
+              display: 'grid',
+              placeItems: 'center',
+              margin: '0 auto 20px auto',
+              color: '#1A273D'
+            }}>
+              <ShieldCheck size={32} color="#C59B4E" />
+            </div>
+
+            <h3 style={{
+              fontFamily: "'Cormorant Garamond', serif",
+              fontSize: '26px',
+              fontWeight: 700,
+              color: '#1B2535',
+              margin: '0 0 10px 0'
+            }}>
+              Request Contact Details?
+            </h3>
+
+            <p style={{ fontSize: '14px', color: '#667085', lineHeight: 1.6, margin: '0 0 24px 0' }}>
+              Your request for <strong>{[profile.firstName, profile.lastName].filter(Boolean).join(' ') || 'Member'}</strong>'s phone number, email address, and parish location will be submitted to the SJC Matrimony administrative security team for verification.
+            </p>
+
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+              <button
+                onClick={() => setConfirmModalOpen(false)}
+                disabled={submittingRequest}
+                style={{
+                  padding: '12px 24px',
+                  borderRadius: '12px',
+                  border: '1px solid #EAE5DC',
+                  background: '#FFFFFF',
+                  color: '#1B2535',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={submitContactRequest}
+                disabled={submittingRequest}
+                style={{
+                  padding: '12px 24px',
+                  borderRadius: '12px',
+                  border: 'none',
+                  background: 'linear-gradient(135deg, #1A273D 0%, #2A3B56 100%)',
+                  color: '#FFFFFF',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+              >
+                {submittingRequest ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    <span>Submitting...</span>
+                  </>
+                ) : (
+                  <>
+                    <PhoneCall size={16} />
+                    <span>Confirm Request</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       </div>
     </div>

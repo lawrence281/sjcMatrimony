@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Check, MapPin, ChevronLeft, ChevronRight, Search, RotateCcw, Church, Building2, User, RefreshCw } from 'lucide-react'
+import { Check, MapPin, ChevronLeft, ChevronRight, Search, RotateCcw, Church, Building2, User, RefreshCw, SlidersHorizontal, X } from 'lucide-react'
 import api from '../services/api'
 import toast from 'react-hot-toast'
 
@@ -36,6 +36,7 @@ export default function BrowseMembers() {
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [totalResults, setTotalResults] = useState(0)
+  const [showMobileFilters, setShowMobileFilters] = useState(false)
 
   // 1. Fetch dynamic contextual location options whenever state or district changes
   useEffect(() => {
@@ -201,364 +202,388 @@ export default function BrowseMembers() {
     }
   }
 
+  const renderFilterPanel = (isDrawer = false) => {
+    return (
+      <aside style={{
+        background: '#FFFFFF',
+        border: isDrawer ? 'none' : '1px solid #EFEBE4',
+        borderRadius: isDrawer ? '0' : '20px',
+        padding: isDrawer ? '0' : '24px',
+        boxShadow: isDrawer ? 'none' : '0 4px 24px rgba(27, 37, 53, 0.04)',
+        height: isDrawer ? 'auto' : 'fit-content'
+      }} className={isDrawer ? "" : "desktop-filters"}>
+        {/* Filter Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+          <h2 style={{
+            fontFamily: "'Cormorant Garamond', serif",
+            fontSize: '24px',
+            fontWeight: 700,
+            color: '#1B2535',
+            margin: 0
+          }}>
+            Filter Members
+          </h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <button 
+              onClick={handleResetFilters}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#B88E4C',
+                fontSize: '13px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                padding: 0
+              }}
+            >
+              <RotateCcw size={13} />
+              <span>Reset</span>
+            </button>
+            {isDrawer && (
+              <button 
+                onClick={() => setShowMobileFilters(false)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#667085',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: 0
+                }}
+              >
+                <X size={20} />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Search Input */}
+        <div style={{ marginBottom: '20px' }}>
+          <label style={{ fontSize: '13px', fontWeight: 700, color: '#1B2535', display: 'block', marginBottom: '8px' }}>
+            Search Keyword
+          </label>
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+            <Search size={15} color="#8A92A0" style={{ position: 'absolute', left: '12px' }} />
+            <input 
+              type="text"
+              placeholder="Name, occupation, church..."
+              value={searchQuery}
+              onChange={e => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+              style={{
+                width: '100%',
+                padding: '9px 12px 9px 36px',
+                borderRadius: '10px',
+                background: '#F9F7F3',
+                border: '1px solid #EFEBE4',
+                fontSize: '13px',
+                color: '#1B2535',
+                outline: 'none'
+              }}
+            />
+          </div>
+        </div>
+
+        {/* 1. DYNAMIC DIOCESE FILTER */}
+        <div style={{ marginBottom: '20px' }}>
+          <label style={{ fontSize: '13px', fontWeight: 700, color: '#1B2535', display: 'block', marginBottom: '8px' }}>
+            Diocese
+          </label>
+          <select 
+            value={selectedDiocese}
+            onChange={e => { setSelectedDiocese(e.target.value); setCurrentPage(1); }}
+            style={{
+              width: '100%',
+              padding: '10px 12px',
+              borderRadius: '10px',
+              background: '#F9F7F3',
+              border: '1px solid #EFEBE4',
+              fontSize: '13px',
+              color: '#1B2535',
+              outline: 'none',
+              cursor: 'pointer',
+              appearance: 'auto'
+            }}
+          >
+            <option value="All Dioceses">All Dioceses ({dbDioceses.length})</option>
+            {dbDioceses.map(d => (
+              <option key={d} value={d}>{d}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* ── CONTEXTUAL LOCATION SELECTION (STATE -> DISTRICT -> CITY HIERARCHY) ── */}
+        <div style={{
+          background: '#FDFBF7',
+          border: '1px solid #F0EAE1',
+          borderRadius: '14px',
+          padding: '16px',
+          marginBottom: '20px'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '14px', color: '#1B2535', fontWeight: 700, fontSize: '13px' }}>
+            <MapPin size={15} color="#B88E4C" />
+            <span>Location Filter</span>
+          </div>
+
+          {/* 2. STATE FILTER */}
+          <div style={{ marginBottom: '14px' }}>
+            <label style={{ fontSize: '12px', fontWeight: 600, color: '#475467', display: 'block', marginBottom: '6px' }}>
+              State
+            </label>
+            <select 
+              value={selectedState}
+              onChange={e => handleStateChange(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '9px 12px',
+                borderRadius: '10px',
+                background: '#FFFFFF',
+                border: '1px solid #EFEBE4',
+                fontSize: '13px',
+                color: '#1B2535',
+                outline: 'none',
+                cursor: 'pointer',
+                appearance: 'auto'
+              }}
+            >
+              <option value="All States">All States ({dbStates.length})</option>
+              {dbStates.map(st => (
+                <option key={st} value={st}>{st}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* 3. DISTRICT FILTER (FILTERED BY SELECTED STATE) */}
+          <div style={{ marginBottom: '14px' }}>
+            <label style={{ fontSize: '12px', fontWeight: 600, color: '#475467', display: 'block', marginBottom: '6px' }}>
+              District {selectedState !== 'All States' ? `(${selectedState})` : ''}
+            </label>
+            <select 
+              value={selectedDistrict}
+              onChange={e => handleDistrictChange(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '9px 12px',
+                borderRadius: '10px',
+                background: '#FFFFFF',
+                border: '1px solid #EFEBE4',
+                fontSize: '13px',
+                color: '#1B2535',
+                outline: 'none',
+                cursor: 'pointer',
+                appearance: 'auto'
+              }}
+            >
+              <option value="All Districts">All Districts ({dbDistricts.length})</option>
+              {dbDistricts.map(dt => (
+                <option key={dt} value={dt}>{dt}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* 4. CITY FILTER (FILTERED BY SELECTED STATE & DISTRICT) */}
+          <div>
+            <label style={{ fontSize: '12px', fontWeight: 600, color: '#475467', display: 'block', marginBottom: '6px' }}>
+              City / Town {selectedDistrict !== 'All Districts' ? `(${selectedDistrict})` : ''}
+            </label>
+            <select 
+              value={selectedCity}
+              onChange={e => { setSelectedCity(e.target.value); setCurrentPage(1); }}
+              style={{
+                width: '100%',
+                padding: '9px 12px',
+                borderRadius: '10px',
+                background: '#FFFFFF',
+                border: '1px solid #EFEBE4',
+                fontSize: '13px',
+                color: '#1B2535',
+                outline: 'none',
+                cursor: 'pointer',
+                appearance: 'auto'
+              }}
+            >
+              <option value="All Cities">All Cities ({dbCities.length})</option>
+              {dbCities.map(ct => (
+                <option key={ct} value={ct}>{ct}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* 5. GENDER FILTER */}
+        <div style={{ marginBottom: '20px' }}>
+          <label style={{ fontSize: '13px', fontWeight: 700, color: '#1B2535', display: 'block', marginBottom: '8px' }}>
+            Gender
+          </label>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
+            {['All', 'Male', 'Female'].map(g => (
+              <button 
+                key={g}
+                type="button"
+                onClick={() => { setSelectedGender(g); setCurrentPage(1); }}
+                style={{
+                  padding: '8px 4px',
+                  borderRadius: '8px',
+                  border: selectedGender === g ? '1.5px solid #1A273D' : '1px solid #EFEBE4',
+                  background: selectedGender === g ? '#1A273D' : '#F9F7F3',
+                  color: selectedGender === g ? '#FFFFFF' : '#475467',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}
+              >
+                {g}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* 6. DENOMINATION FILTER */}
+        <div style={{ marginBottom: '20px' }}>
+          <label style={{ fontSize: '13px', fontWeight: 700, color: '#1B2535', display: 'block', marginBottom: '8px' }}>
+            Denomination
+          </label>
+          <select 
+            value={selectedDenomination}
+            onChange={e => { setSelectedDenomination(e.target.value); setCurrentPage(1); }}
+            style={{
+              width: '100%',
+              padding: '10px 12px',
+              borderRadius: '10px',
+              background: '#F9F7F3',
+              border: '1px solid #EFEBE4',
+              fontSize: '13px',
+              color: '#1B2535',
+              outline: 'none',
+              cursor: 'pointer',
+              appearance: 'auto'
+            }}
+          >
+            <option value="All">All Denominations</option>
+            <option value="Roman Catholic">Roman Catholic</option>
+            <option value="Catholic">Catholic</option>
+            <option value="Syro-Malabar">Syro-Malabar</option>
+            <option value="Syro-Malankara">Syro-Malankara</option>
+            <option value="Latin Catholic">Latin Catholic</option>
+            <option value="Protestant">Protestant</option>
+            <option value="Orthodox">Orthodox</option>
+            <option value="Anglican">Anglican</option>
+          </select>
+        </div>
+
+        {/* 7. MARITAL STATUS FILTER */}
+        <div style={{ marginBottom: '20px' }}>
+          <label style={{ fontSize: '13px', fontWeight: 700, color: '#1B2535', display: 'block', marginBottom: '8px' }}>
+            Marital Status
+          </label>
+          <select 
+            value={selectedMaritalStatus}
+            onChange={e => { setSelectedMaritalStatus(e.target.value); setCurrentPage(1); }}
+            style={{
+              width: '100%',
+              padding: '10px 12px',
+              borderRadius: '10px',
+              background: '#F9F7F3',
+              border: '1px solid #EFEBE4',
+              fontSize: '13px',
+              color: '#1B2535',
+              outline: 'none',
+              cursor: 'pointer',
+              appearance: 'auto'
+            }}
+          >
+            <option value="All">All Marital Statuses</option>
+            <option value="Never Married">Never Married</option>
+            <option value="Divorced">Divorced</option>
+            <option value="Widowed">Widowed</option>
+            <option value="Separated">Separated</option>
+          </select>
+        </div>
+
+        {/* 8. AGE RANGE SLIDER */}
+        <div style={{ marginBottom: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+            <label style={{ fontSize: '13px', fontWeight: 700, color: '#1B2535', margin: 0 }}>Age Range</label>
+            <span style={{ fontSize: '13px', fontWeight: 600, color: '#B88E4C' }}>
+              {ageRange[0]} - {ageRange[1]} yrs
+            </span>
+          </div>
+          <input 
+            type="range" 
+            min="18" 
+            max="60" 
+            value={ageRange[1]} 
+            onChange={e => { setAgeRange([ageRange[0], parseInt(e.target.value)]); setCurrentPage(1); }}
+            style={{
+              width: '100%',
+              accentColor: '#B88E4C',
+              cursor: 'pointer'
+            }}
+          />
+        </div>
+
+        {/* 9. PROFESSION FILTER */}
+        <div style={{ marginBottom: isDrawer ? '40px' : '0' }}>
+          <label style={{ fontSize: '13px', fontWeight: 700, color: '#1B2535', display: 'block', marginBottom: '8px' }}>
+            Profession
+          </label>
+          <select 
+            value={profession}
+            onChange={e => { setProfession(e.target.value); setCurrentPage(1); }}
+            style={{
+              width: '100%',
+              padding: '10px 12px',
+              borderRadius: '10px',
+              background: '#F9F7F3',
+              border: '1px solid #EFEBE4',
+              fontSize: '13px',
+              color: '#1B2535',
+              outline: 'none',
+              cursor: 'pointer',
+              appearance: 'auto'
+            }}
+          >
+            <option value="All Professions">All Professions</option>
+            <option value="Teacher">Teacher / Educator</option>
+            <option value="Engineer">Software / Hardware Engineer</option>
+            <option value="Doctor">Doctor / Medical Professional</option>
+            <option value="Architect">Architect</option>
+            <option value="Attorney">Attorney / Lawyer</option>
+            <option value="Designer">Designer</option>
+            <option value="Researcher">Researcher</option>
+            <option value="Accountant">Accountant / Finance</option>
+          </select>
+        </div>
+      </aside>
+    )
+  }
+
   return (
     <div style={{ background: '#FAF8F5', minHeight: '100vh', padding: '36px 0 80px 0', fontFamily: "'Inter', sans-serif" }}>
       <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '0 24px' }}>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '310px 1fr', gap: '32px' }} className="browse-container-grid">
+        <div className="grid grid-cols-1 lg:grid-cols-[310px_1fr] gap-8 browse-container-grid">
           
           {/* LEFT SIDEBAR FILTERS */}
-          <aside style={{
-            background: '#FFFFFF',
-            border: '1px solid #EFEBE4',
-            borderRadius: '20px',
-            padding: '24px',
-            boxShadow: '0 4px 24px rgba(27, 37, 53, 0.04)',
-            height: 'fit-content'
-          }}>
-            {/* Filter Header */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
-              <h2 style={{
-                fontFamily: "'Cormorant Garamond', serif",
-                fontSize: '24px',
-                fontWeight: 700,
-                color: '#1B2535',
-                margin: 0
-              }}>
-                Filter Members
-              </h2>
-              <button 
-                onClick={handleResetFilters}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: '#B88E4C',
-                  fontSize: '13px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  padding: 0
-                }}
-              >
-                <RotateCcw size={13} />
-                <span>Reset</span>
-              </button>
-            </div>
-
-            {/* Search Input */}
-            <div style={{ marginBottom: '20px' }}>
-              <label style={{ fontSize: '13px', fontWeight: 700, color: '#1B2535', display: 'block', marginBottom: '8px' }}>
-                Search Keyword
-              </label>
-              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                <Search size={15} color="#8A92A0" style={{ position: 'absolute', left: '12px' }} />
-                <input 
-                  type="text"
-                  placeholder="Name, occupation, church..."
-                  value={searchQuery}
-                  onChange={e => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-                  style={{
-                    width: '100%',
-                    padding: '9px 12px 9px 36px',
-                    borderRadius: '10px',
-                    background: '#F9F7F3',
-                    border: '1px solid #EFEBE4',
-                    fontSize: '13px',
-                    color: '#1B2535',
-                    outline: 'none'
-                  }}
-                />
-              </div>
-            </div>
-
-            {/* 1. DYNAMIC DIOCESE FILTER */}
-            <div style={{ marginBottom: '20px' }}>
-              <label style={{ fontSize: '13px', fontWeight: 700, color: '#1B2535', display: 'block', marginBottom: '8px' }}>
-                Diocese
-              </label>
-              <select 
-                value={selectedDiocese}
-                onChange={e => { setSelectedDiocese(e.target.value); setCurrentPage(1); }}
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  borderRadius: '10px',
-                  background: '#F9F7F3',
-                  border: '1px solid #EFEBE4',
-                  fontSize: '13px',
-                  color: '#1B2535',
-                  outline: 'none',
-                  cursor: 'pointer',
-                  appearance: 'auto'
-                }}
-              >
-                <option value="All Dioceses">All Dioceses ({dbDioceses.length})</option>
-                {dbDioceses.map(d => (
-                  <option key={d} value={d}>{d}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* ── CONTEXTUAL LOCATION SELECTION (STATE -> DISTRICT -> CITY HIERARCHY) ── */}
-            <div style={{
-              background: '#FDFBF7',
-              border: '1px solid #F0EAE1',
-              borderRadius: '14px',
-              padding: '16px',
-              marginBottom: '20px'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '14px', color: '#1B2535', fontWeight: 700, fontSize: '13px' }}>
-                <MapPin size={15} color="#B88E4C" />
-                <span>Location Filter</span>
-              </div>
-
-              {/* 2. STATE FILTER */}
-              <div style={{ marginBottom: '14px' }}>
-                <label style={{ fontSize: '12px', fontWeight: 600, color: '#475467', display: 'block', marginBottom: '6px' }}>
-                  State
-                </label>
-                <select 
-                  value={selectedState}
-                  onChange={e => handleStateChange(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '9px 12px',
-                    borderRadius: '10px',
-                    background: '#FFFFFF',
-                    border: '1px solid #EFEBE4',
-                    fontSize: '13px',
-                    color: '#1B2535',
-                    outline: 'none',
-                    cursor: 'pointer',
-                    appearance: 'auto'
-                  }}
-                >
-                  <option value="All States">All States ({dbStates.length})</option>
-                  {dbStates.map(st => (
-                    <option key={st} value={st}>{st}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* 3. DISTRICT FILTER (FILTERED BY SELECTED STATE) */}
-              <div style={{ marginBottom: '14px' }}>
-                <label style={{ fontSize: '12px', fontWeight: 600, color: '#475467', display: 'block', marginBottom: '6px' }}>
-                  District {selectedState !== 'All States' ? `(${selectedState})` : ''}
-                </label>
-                <select 
-                  value={selectedDistrict}
-                  onChange={e => handleDistrictChange(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '9px 12px',
-                    borderRadius: '10px',
-                    background: '#FFFFFF',
-                    border: '1px solid #EFEBE4',
-                    fontSize: '13px',
-                    color: '#1B2535',
-                    outline: 'none',
-                    cursor: 'pointer',
-                    appearance: 'auto'
-                  }}
-                >
-                  <option value="All Districts">All Districts ({dbDistricts.length})</option>
-                  {dbDistricts.map(dt => (
-                    <option key={dt} value={dt}>{dt}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* 4. CITY FILTER (FILTERED BY SELECTED STATE & DISTRICT) */}
-              <div>
-                <label style={{ fontSize: '12px', fontWeight: 600, color: '#475467', display: 'block', marginBottom: '6px' }}>
-                  City / Town {selectedDistrict !== 'All Districts' ? `(${selectedDistrict})` : ''}
-                </label>
-                <select 
-                  value={selectedCity}
-                  onChange={e => { setSelectedCity(e.target.value); setCurrentPage(1); }}
-                  style={{
-                    width: '100%',
-                    padding: '9px 12px',
-                    borderRadius: '10px',
-                    background: '#FFFFFF',
-                    border: '1px solid #EFEBE4',
-                    fontSize: '13px',
-                    color: '#1B2535',
-                    outline: 'none',
-                    cursor: 'pointer',
-                    appearance: 'auto'
-                  }}
-                >
-                  <option value="All Cities">All Cities ({dbCities.length})</option>
-                  {dbCities.map(ct => (
-                    <option key={ct} value={ct}>{ct}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {/* 5. GENDER FILTER */}
-            <div style={{ marginBottom: '20px' }}>
-              <label style={{ fontSize: '13px', fontWeight: 700, color: '#1B2535', display: 'block', marginBottom: '8px' }}>
-                Gender
-              </label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
-                {['All', 'Male', 'Female'].map(g => (
-                  <button 
-                    key={g}
-                    type="button"
-                    onClick={() => { setSelectedGender(g); setCurrentPage(1); }}
-                    style={{
-                      padding: '8px 4px',
-                      borderRadius: '8px',
-                      border: selectedGender === g ? '1.5px solid #1A273D' : '1px solid #EFEBE4',
-                      background: selectedGender === g ? '#1A273D' : '#F9F7F3',
-                      color: selectedGender === g ? '#FFFFFF' : '#475467',
-                      fontSize: '12px',
-                      fontWeight: 600,
-                      cursor: 'pointer'
-                    }}
-                  >
-                    {g}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* 6. DENOMINATION FILTER */}
-            <div style={{ marginBottom: '20px' }}>
-              <label style={{ fontSize: '13px', fontWeight: 700, color: '#1B2535', display: 'block', marginBottom: '8px' }}>
-                Denomination
-              </label>
-              <select 
-                value={selectedDenomination}
-                onChange={e => { setSelectedDenomination(e.target.value); setCurrentPage(1); }}
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  borderRadius: '10px',
-                  background: '#F9F7F3',
-                  border: '1px solid #EFEBE4',
-                  fontSize: '13px',
-                  color: '#1B2535',
-                  outline: 'none',
-                  cursor: 'pointer',
-                  appearance: 'auto'
-                }}
-              >
-                <option value="All">All Denominations</option>
-                <option value="Roman Catholic">Roman Catholic</option>
-                <option value="Catholic">Catholic</option>
-                <option value="Syro-Malabar">Syro-Malabar</option>
-                <option value="Syro-Malankara">Syro-Malankara</option>
-                <option value="Latin Catholic">Latin Catholic</option>
-                <option value="Protestant">Protestant</option>
-                <option value="Orthodox">Orthodox</option>
-                <option value="Anglican">Anglican</option>
-              </select>
-            </div>
-
-            {/* 7. MARITAL STATUS FILTER */}
-            <div style={{ marginBottom: '20px' }}>
-              <label style={{ fontSize: '13px', fontWeight: 700, color: '#1B2535', display: 'block', marginBottom: '8px' }}>
-                Marital Status
-              </label>
-              <select 
-                value={selectedMaritalStatus}
-                onChange={e => { setSelectedMaritalStatus(e.target.value); setCurrentPage(1); }}
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  borderRadius: '10px',
-                  background: '#F9F7F3',
-                  border: '1px solid #EFEBE4',
-                  fontSize: '13px',
-                  color: '#1B2535',
-                  outline: 'none',
-                  cursor: 'pointer',
-                  appearance: 'auto'
-                }}
-              >
-                <option value="All">All Marital Statuses</option>
-                <option value="Never Married">Never Married</option>
-                <option value="Divorced">Divorced</option>
-                <option value="Widowed">Widowed</option>
-                <option value="Separated">Separated</option>
-              </select>
-            </div>
-
-            {/* 8. AGE RANGE SLIDER */}
-            <div style={{ marginBottom: '20px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                <label style={{ fontSize: '13px', fontWeight: 700, color: '#1B2535', margin: 0 }}>Age Range</label>
-                <span style={{ fontSize: '13px', fontWeight: 600, color: '#B88E4C' }}>
-                  {ageRange[0]} - {ageRange[1]} yrs
-                </span>
-              </div>
-              <input 
-                type="range" 
-                min="18" 
-                max="60" 
-                value={ageRange[1]} 
-                onChange={e => { setAgeRange([ageRange[0], parseInt(e.target.value)]); setCurrentPage(1); }}
-                style={{
-                  width: '100%',
-                  accentColor: '#B88E4C',
-                  cursor: 'pointer'
-                }}
-              />
-            </div>
-
-            {/* 9. PROFESSION FILTER */}
-            <div>
-              <label style={{ fontSize: '13px', fontWeight: 700, color: '#1B2535', display: 'block', marginBottom: '8px' }}>
-                Profession
-              </label>
-              <select 
-                value={profession}
-                onChange={e => { setProfession(e.target.value); setCurrentPage(1); }}
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  borderRadius: '10px',
-                  background: '#F9F7F3',
-                  border: '1px solid #EFEBE4',
-                  fontSize: '13px',
-                  color: '#1B2535',
-                  outline: 'none',
-                  cursor: 'pointer',
-                  appearance: 'auto'
-                }}
-              >
-                <option value="All Professions">All Professions</option>
-                <option value="Teacher">Teacher / Educator</option>
-                <option value="Engineer">Software / Hardware Engineer</option>
-                <option value="Doctor">Doctor / Medical Professional</option>
-                <option value="Architect">Architect</option>
-                <option value="Attorney">Attorney / Lawyer</option>
-                <option value="Designer">Designer</option>
-                <option value="Researcher">Researcher</option>
-                <option value="Accountant">Accountant / Finance</option>
-              </select>
-            </div>
-          </aside>
+          {renderFilterPanel(false)}
 
           {/* MAIN GRID RESULTS */}
           <main>
             {/* Top Results Banner */}
-            <div style={{
-              background: '#FFFFFF',
-              border: '1px solid #EFEBE4',
-              borderRadius: '20px',
-              padding: '20px 28px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: '24px',
-              boxShadow: '0 2px 12px rgba(27, 37, 53, 0.03)'
-            }}>
+            <div 
+              className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
+              style={{
+                background: '#FFFFFF',
+                border: '1px solid #EFEBE4',
+                borderRadius: '20px',
+                padding: '20px 24px',
+                marginBottom: '24px',
+                boxShadow: '0 2px 12px rgba(27, 37, 53, 0.03)'
+              }}
+            >
               <div>
                 <h1 style={{
                   fontFamily: "'Cormorant Garamond', serif",
@@ -585,7 +610,8 @@ export default function BrowseMembers() {
                 color: '#1B2535',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '6px'
+                gap: '6px',
+                width: 'fit-content'
               }}>
                 <Check size={14} color="#059669" />
                 <span>Verified Grid View</span>
@@ -683,11 +709,7 @@ export default function BrowseMembers() {
               </div>
             ) : (
               /* Grid Layout of Real Database Profiles */
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(3, 1fr)',
-                gap: '24px'
-              }} className="browse-cards-grid">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 browse-cards-grid">
                 {members.map(member => {
                   const isConnected = connectedIds.includes(member._id)
                   const isConnecting = connectingId === member._id
@@ -923,6 +945,25 @@ export default function BrowseMembers() {
 
         </div>
       </div>
+
+      {/* Floating Mobile Filter Trigger Button */}
+      <button 
+        className="mobile-filter-trigger"
+        onClick={() => setShowMobileFilters(true)}
+        title="Filter Members"
+      >
+        <SlidersHorizontal size={20} />
+      </button>
+
+      {/* Mobile Drawer Overlay */}
+      {showMobileFilters && (
+        <div className="mobile-filters-drawer-overlay" onClick={() => setShowMobileFilters(false)}>
+          <div className="mobile-filters-drawer" onClick={e => e.stopPropagation()}>
+            {renderFilterPanel(true)}
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Search, ChevronLeft, ChevronRight, Check, Sparkles, ShieldCheck, Church, Lock, Users, HeartHandshake, ArrowRight, UserCheck, Loader2 } from 'lucide-react'
+import { Search, ChevronLeft, ChevronRight, Check, Sparkles, ShieldCheck, Church, Lock, Users, HeartHandshake, ArrowRight, UserCheck, Loader2, Rose, Heart } from 'lucide-react'
 import api from '../services/api'
 
 export default function Home({ scrollToSubscription }) {
@@ -53,7 +53,7 @@ export default function Home({ scrollToSubscription }) {
         padding: '80px 24px 100px 24px',
         overflow: 'hidden'
       }}>
-        {/* Floating Flying Hearts Particles Container */}
+        {/* Floating Hearts (Bottom to Top) & Roses (Rise and Fall) Container */}
         <div style={{
           position: 'absolute',
           inset: 0,
@@ -62,19 +62,17 @@ export default function Home({ scrollToSubscription }) {
           zIndex: 1
         }}>
           {[
-            { left: '3%', size: 24, duration: 6.5, delay: 0, opacity: 0.8, color: '#F472B6' },
-            { left: '7%', size: 16, duration: 8.2, delay: 1.8, opacity: 0.65, color: '#E2B96D' },
-            { left: '11%', size: 28, duration: 7.0, delay: 3.2, opacity: 0.85, color: '#F43F5E' },
-            { left: '15%', size: 20, duration: 9.1, delay: 0.5, opacity: 0.55, color: '#FCD34D' },
-            { left: '19%', size: 30, duration: 6.2, delay: 2.5, opacity: 0.8, color: '#EC4899' },
-            { left: '23%', size: 18, duration: 7.8, delay: 4.2, opacity: 0.7, color: '#E2B96D' },
+            { left: '3%', type: 'rose', size: 26, duration: 8.2, delay: 0, opacity: 0.85, color: '#F43F5E' },
+            { left: '8%', type: 'heart', size: 24, duration: 6.8, delay: 1.5, opacity: 0.8, color: '#E2B96D' },
+            { left: '15%', type: 'rose', size: 28, duration: 9.0, delay: 3.2, opacity: 0.9, color: '#FB7185' },
+            { left: '22%', type: 'heart', size: 22, duration: 7.4, delay: 0.8, opacity: 0.75, color: '#F472B6' },
+            { left: '30%', type: 'rose', size: 24, duration: 8.5, delay: 4.2, opacity: 0.8, color: '#E2B96D' },
             
-            { right: '3%', size: 26, duration: 7.2, delay: 0.8, opacity: 0.8, color: '#EC4899' },
-            { right: '7%', size: 18, duration: 8.6, delay: 2.2, opacity: 0.65, color: '#FCD34D' },
-            { right: '11%', size: 32, duration: 6.4, delay: 3.6, opacity: 0.85, color: '#F43F5E' },
-            { right: '15%', size: 22, duration: 9.4, delay: 1.2, opacity: 0.6, color: '#E2B96D' },
-            { right: '19%', size: 16, duration: 7.6, delay: 4.8, opacity: 0.75, color: '#F472B6' },
-            { right: '23%', size: 24, duration: 6.9, delay: 2.9, opacity: 0.7, color: '#FB7185' },
+            { right: '3%', type: 'heart', size: 26, duration: 7.0, delay: 0.4, opacity: 0.85, color: '#F43F5E' },
+            { right: '9%', type: 'rose', size: 30, duration: 8.8, delay: 2.2, opacity: 0.9, color: '#EC4899' },
+            { right: '16%', type: 'heart', size: 20, duration: 6.5, delay: 3.8, opacity: 0.75, color: '#E2B96D' },
+            { right: '23%', type: 'rose', size: 26, duration: 9.2, delay: 1.2, opacity: 0.85, color: '#FB7185' },
+            { right: '31%', type: 'heart', size: 28, duration: 7.8, delay: 5.0, opacity: 0.8, color: '#F43F5E' },
           ].map((p, idx) => (
             <div
               key={idx}
@@ -83,21 +81,17 @@ export default function Home({ scrollToSubscription }) {
                 bottom: '-40px',
                 left: p.left,
                 right: p.right,
-                animation: `floatHeroHeart ${p.duration}s ease-in-out ${p.delay}s infinite`,
+                animation: `${p.type === 'rose' ? 'riseAndFallRose' : 'floatHeroHeart'} ${p.duration}s ease-in-out ${p.delay}s infinite`,
                 opacity: p.opacity,
-                filter: 'drop-shadow(0 2px 8px rgba(244, 63, 94, 0.45))',
+                filter: `drop-shadow(0 2px 8px ${p.color}66)`,
                 willChange: 'transform, opacity'
               }}
             >
-              <svg
-                width={p.size}
-                height={p.size}
-                viewBox="0 0 24 24"
-                fill={p.color}
-                stroke="none"
-              >
-                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
-              </svg>
+              {p.type === 'rose' ? (
+                <Rose size={p.size} color={p.color} fill={p.color} />
+              ) : (
+                <Heart size={p.size} color={p.color} fill={p.color} />
+              )}
             </div>
           ))}
         </div>
@@ -221,7 +215,7 @@ export default function Home({ scrollToSubscription }) {
             <p style={{ color: '#667085', fontSize: '14px' }}>No verified member profiles available at the moment.</p>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '24px' }} className="home-matches-grid">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 home-matches-grid">
             {featuredMembers.map((member) => (
               <div 
                 key={member._id}
@@ -324,7 +318,7 @@ export default function Home({ scrollToSubscription }) {
             Designed exclusively for single Christians who value spiritual commitment, authenticity, and lifelong matrimonial covenant.
           </p>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '24px' }} className="why-sjc-grid">
+          <div className="why-sjc-grid mobile-horizontal-scroll">
             
             {/* Feature 1 */}
             <div style={{
@@ -462,7 +456,7 @@ export default function Home({ scrollToSubscription }) {
           Three simple steps to finding your lifelong partner in faith.
         </p>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '32px', position: 'relative' }} className="how-it-works-grid">
+        <div className="how-it-works-grid mobile-horizontal-scroll" style={{ position: 'relative' }}>
           
           {/* Step 1 */}
           <div style={{
