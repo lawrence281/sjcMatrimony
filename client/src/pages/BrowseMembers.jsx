@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Check, MapPin, ChevronLeft, ChevronRight, Search, RotateCcw, Church, Building2, User, RefreshCw, SlidersHorizontal, X } from 'lucide-react'
+import { Check, MapPin, ChevronLeft, ChevronRight, Search, RotateCcw, Church, Building2, User, RefreshCw, SlidersHorizontal, X, Shield, Clock, CheckCircle2 } from 'lucide-react'
 import api from '../services/api'
 import toast from 'react-hot-toast'
 
@@ -12,7 +12,7 @@ export default function BrowseMembers() {
   const [loading, setLoading] = useState(true)
   const [errorState, setErrorState] = useState(false)
   const [connectingId, setConnectingId] = useState(null)
-  const [connectedIds, setConnectedIds] = useState([])
+  const [requestStatuses, setRequestStatuses] = useState({})
 
   // Dynamic filter options fetched from database
   const [dbDioceses, setDbDioceses] = useState([])
@@ -186,17 +186,33 @@ export default function BrowseMembers() {
     toast.success('Filters reset to default')
   }
 
-  const handleConnect = async (e, member) => {
+  useEffect(() => {
+    fetchRequestStatuses()
+  }, [])
+
+  const fetchRequestStatuses = async () => {
+    try {
+      const res = await api.get('/contact-requests/my-statuses')
+      if (res.data && res.data.success) {
+        setRequestStatuses(res.data.statuses || {})
+      }
+    } catch (err) {
+      console.error('Failed to fetch request statuses:', err)
+    }
+  }
+
+  const handleSendContactRequest = async (e, member) => {
     e.stopPropagation()
     const memberId = member._id
     setConnectingId(memberId)
     try {
-      const res = await api.post(`/profile/connect/${memberId}`)
-      setConnectedIds(prev => [...prev, memberId])
-      toast.success(res.data?.message || `Connection request sent to ${member.firstName}!`)
+      const res = await api.post(`/contact-requests/request/${memberId}`)
+      if (res.data && res.data.success) {
+        toast.success(res.data.message || `Contact request submitted for ${member.firstName}!`)
+        setRequestStatuses(prev => ({ ...prev, [memberId]: 'Pending' }))
+      }
     } catch (err) {
-      setConnectedIds(prev => [...prev, memberId])
-      toast.success(`Connection request sent to ${member.firstName}!`)
+      toast.error(err.response?.data?.message || 'Failed to submit contact request.')
     } finally {
       setConnectingId(null)
     }
@@ -711,20 +727,16 @@ export default function BrowseMembers() {
               /* Grid Layout of Real Database Profiles */
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 browse-cards-grid">
                 {members.map(member => {
-                  const isConnected = connectedIds.includes(member._id)
                   const isConnecting = connectingId === member._id
 
                   return (
                     <div 
                       key={member._id}
-                      onClick={() => navigate(`/members/${member._id}`)}
                       style={{
                         background: '#FFFFFF',
                         border: '1px solid #EFEBE4',
                         borderRadius: '20px',
                         overflow: 'hidden',
-                        cursor: 'pointer',
-                        transition: 'transform 0.2s, box-shadow 0.2s',
                         boxShadow: '0 4px 20px rgba(27, 37, 53, 0.04)',
                         display: 'flex',
                         flexDirection: 'column'
@@ -836,38 +848,97 @@ export default function BrowseMembers() {
                           </div>
                         </div>
 
-                        {/* Connect CTA Button */}
-                        <button 
-                          onClick={(e) => handleConnect(e, member)}
-                          disabled={isConnected || isConnecting}
-                          style={{
-                            width: '100%',
-                            padding: '10px',
-                            borderRadius: '10px',
-                            border: isConnected ? '1px solid #10B981' : '1px solid #D6C7AF',
-                            background: isConnected ? '#ECFDF5' : '#FFFFFF',
-                            color: isConnected ? '#059669' : '#1B2535',
-                            fontSize: '13.5px',
-                            fontWeight: 600,
-                            cursor: isConnected ? 'default' : 'pointer',
-                            transition: 'all 0.2s',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '6px'
-                          }}
-                        >
-                          {isConnecting ? (
-                            <span>Connecting...</span>
-                          ) : isConnected ? (
-                            <>
-                              <Check size={15} />
-                              <span>Connected</span>
-                            </>
-                          ) : (
-                            <span>Connect Interest</span>
-                          )}
-                        </button>
+                        {/* Dynamic Contact Request CTA Button */}
+                        {(() => {
+                          const status = requestStatuses[member._id] || 'None'
+                          if (status === 'Approved') {
+                            return (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  navigate(`/members/${member._id}`)
+                                }}
+                                style={{
+                                  width: '100%',
+                                  padding: '11px',
+                                  borderRadius: '12px',
+                                  background: '#1E2B45',
+                                  color: '#FFFFFF',
+                                  border: 'none',
+                                  fontSize: '13.5px',
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  gap: '6px',
+                                  boxShadow: '0 2px 8px rgba(30,43,69,0.2)'
+                                }}
+                              >
+                                <CheckCircle2 size={16} color="#059669" />
+                                <span>View Full Profile</span>
+                              </button>
+                            )
+                          }
+
+                          if (status === 'Pending') {
+                            return (
+                              <button
+                                disabled
+                                style={{
+                                  width: '100%',
+                                  padding: '11px',
+                                  borderRadius: '12px',
+                                  background: '#FFFBEB',
+                                  border: '1px solid #FDE68A',
+                                  color: '#D97706',
+                                  fontSize: '12.5px',
+                                  fontWeight: 700,
+                                  cursor: 'not-allowed',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  gap: '6px'
+                                }}
+                              >
+                                <Clock size={16} color="#D97706" />
+                                <span>Request Pending</span>
+                              </button>
+                            )
+                          }
+
+                          return (
+                            <button
+                              onClick={(e) => handleSendContactRequest(e, member)}
+                              disabled={connectingId === member._id}
+                              style={{
+                                width: '100%',
+                                padding: '11px',
+                                borderRadius: '12px',
+                                background: '#FFFFFF',
+                                border: '1.5px solid #1E2B45',
+                                color: '#1E2B45',
+                                fontSize: '13px',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '6px',
+                                transition: 'all 0.2s'
+                              }}
+                            >
+                              {connectingId === member._id ? (
+                                <span>Sending Request...</span>
+                              ) : (
+                                <>
+                                  <Shield size={16} color="#1E2B45" />
+                                  <span>Request Contact Info</span>
+                                </>
+                              )}
+                            </button>
+                          )
+                        })()}
                       </div>
                     </div>
                   )

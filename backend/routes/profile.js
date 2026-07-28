@@ -98,7 +98,7 @@ router.get('/browse', optionalAuth, browseProfiles);
 router.get('/filter-options', getFilterOptions);
 
 // GET    /api/profile/member/:id      — view single public profile
-router.get('/member/:id', getPublicProfileById);
+router.get('/member/:id', optionalAuth, getPublicProfileById);
 
 // POST   /api/profile/connect/:id     — send connection interest
 router.post('/connect/:id', connectMember);

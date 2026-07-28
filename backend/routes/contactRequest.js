@@ -5,6 +5,7 @@ const {
   sendContactRequest,
   getRequestStatus,
   getMyContactRequests,
+  getMyContactRequestStatuses,
   getApprovedContactDetails,
   adminGetAllRequests,
   adminApproveRequest,
@@ -23,6 +24,9 @@ router.get('/status/:profileId', protect, getRequestStatus);
 
 // GET    /api/contact-requests/my-requests          — List user's contact requests
 router.get('/my-requests', protect, getMyContactRequests);
+
+// GET    /api/contact-requests/my-statuses          — List status map of requested profiles
+router.get('/my-statuses', protect, getMyContactRequestStatuses);
 
 // GET    /api/contact-requests/approved-details/:profileId — Securely fetch private contact details if approved
 router.get('/approved-details/:profileId', protect, getApprovedContactDetails);

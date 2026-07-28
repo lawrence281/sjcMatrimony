@@ -61,18 +61,11 @@ const sendContactRequest = async (req, res) => {
         });
       }
 
-      // If previously rejected, re-open as Pending
+      // If previously rejected, block resubmission according to business rules
       if (existingRequest.status === 'Rejected') {
-        existingRequest.status = 'Pending';
-        existingRequest.adminRemarks = '';
-        existingRequest.approvalDate = null;
-        existingRequest.approvedBy = null;
-        await existingRequest.save();
-
-        return res.status(OK).json({
-          success: true,
-          message: 'Contact request resubmitted for admin review.',
-          request: existingRequest,
+        return res.status(FORBIDDEN).json({
+          success: false,
+          message: 'Contact request for this profile was rejected by administration and cannot be re-requested.',
         });
       }
     }
@@ -122,6 +115,16 @@ const getRequestStatus = async (req, res) => {
       requestedProfile: profile._id,
     });
 
+    // If request was Rejected, hide it from client view
+    if (request && request.status === 'Rejected') {
+      return res.status(OK).json({
+        success: true,
+        hasRequest: false,
+        status: 'None',
+        request: null,
+      });
+    }
+
     return res.status(OK).json({
       success: true,
       hasRequest: !!request,
@@ -138,18 +141,29 @@ const getRequestStatus = async (req, res) => {
 
 // ─────────────────────────────────────────────
 // 3. GET /api/contact-requests/my-requests
-// Get all requests sent by logged in user
+// Get all requests sent by logged in user (Automatically excludes Rejected requests)
 // ─────────────────────────────────────────────
 const getMyContactRequests = async (req, res) => {
   try {
     const { status } = req.query;
 
-    const query = { requestedBy: req.user._id };
-    if (status && ['Pending', 'Approved', 'Rejected'].includes(status)) {
+    // Exclude Rejected requests for client user
+    const query = { 
+      requestedBy: req.user._id,
+      status: { $ne: 'Rejected' }
+    };
+
+    if (status && ['Pending', 'Approved'].includes(status)) {
       query.status = status;
+    } else if (status === 'Rejected') {
+      return res.status(OK).json({
+        success: true,
+        count: 0,
+        requests: [],
+      });
     }
 
-    const requests = await ContactRequest.find(query)
+    const rawRequests = await ContactRequest.find(query)
       .populate({
         path: 'requestedProfile',
         select:
@@ -157,10 +171,41 @@ const getMyContactRequests = async (req, res) => {
       })
       .sort({ createdAt: -1 });
 
+    // Filter out any populated profiles that might be null or deleted
+    const requests = rawRequests.filter((r) => r.requestedProfile != null);
+
     return res.status(OK).json({
       success: true,
       count: requests.length,
       requests,
+    });
+  } catch (error) {
+    return res.status(INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// ─────────────────────────────────────────────
+// 3.5. GET /api/contact-requests/my-statuses
+// Return map of requestedProfileId -> status for logged in user
+// ─────────────────────────────────────────────
+const getMyContactRequestStatuses = async (req, res) => {
+  try {
+    const requests = await ContactRequest.find({ requestedBy: req.user._id })
+      .select('requestedProfile status');
+
+    const statusMap = {};
+    requests.forEach((r) => {
+      if (r.requestedProfile) {
+        statusMap[r.requestedProfile.toString()] = r.status;
+      }
+    });
+
+    return res.status(OK).json({
+      success: true,
+      statuses: statusMap,
     });
   } catch (error) {
     return res.status(INTERNAL_SERVER_ERROR).json({
@@ -381,6 +426,7 @@ module.exports = {
   sendContactRequest,
   getRequestStatus,
   getMyContactRequests,
+  getMyContactRequestStatuses,
   getApprovedContactDetails,
   adminGetAllRequests,
   adminApproveRequest,
