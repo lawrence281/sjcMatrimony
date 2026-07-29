@@ -52,6 +52,25 @@ const sendContactRequest = async (req, res) => {
       });
     }
 
+    // Prevent requesting if target profile is already taken (Approved connection with another member)
+    const targetUserId = targetProfile.userId && targetProfile.userId._id ? targetProfile.userId._id : targetProfile.userId;
+    const targetTaken = await ContactRequest.findOne({
+      status: 'Approved',
+      $or: [
+        { requestedProfile: targetProfile._id },
+        { requestedBy: targetUserId },
+        { receiverUser: targetUserId },
+      ],
+    });
+
+    if (targetTaken) {
+      return res.status(BAD_REQUEST).json({
+        success: false,
+        isTaken: true,
+        message: 'This member is already connected with another profile (Already Taken).',
+      });
+    }
+
     // Check for existing request from User A to User B
     const existingRequest = await ContactRequest.findOne({
       requestedBy: req.user._id,
@@ -108,7 +127,7 @@ const sendContactRequest = async (req, res) => {
 
     return res.status(CREATED).json({
       success: true,
-      message: 'Awaiting member approval before forwarding to the Admin.',
+      message: 'Contact request submitted successfully. Awaiting member approval.',
       request: newRequest,
     });
   } catch (error) {
@@ -121,7 +140,7 @@ const sendContactRequest = async (req, res) => {
 
 // ─────────────────────────────────────────────
 // 2. GET /api/contact-requests/status/:profileId
-// Check status of contact request for a specific target profile
+// Check relationship status between logged in user and target profile
 // ─────────────────────────────────────────────
 const getRequestStatus = async (req, res) => {
   try {
@@ -146,6 +165,36 @@ const getRequestStatus = async (req, res) => {
         { requestedBy: targetProfile.userId, receiverUser: req.user._id },
       ],
     }).sort({ createdAt: -1 });
+
+    if (request && request.status === 'Approved') {
+      return res.status(OK).json({
+        success: true,
+        hasRequest: true,
+        status: 'Approved',
+        request,
+      });
+    }
+
+    // Check if target profile has an Approved request with someone else (Already Taken)
+    const targetUserId = targetProfile.userId && targetProfile.userId._id ? targetProfile.userId._id : targetProfile.userId;
+    const targetTaken = await ContactRequest.findOne({
+      status: 'Approved',
+      $or: [
+        { requestedProfile: targetProfile._id },
+        { requestedBy: targetUserId },
+        { receiverUser: targetUserId },
+      ],
+    });
+
+    if (targetTaken) {
+      return res.status(OK).json({
+        success: true,
+        hasRequest: false,
+        isTaken: true,
+        status: 'Already Taken',
+        request: null,
+      });
+    }
 
     return res.status(OK).json({
       success: true,

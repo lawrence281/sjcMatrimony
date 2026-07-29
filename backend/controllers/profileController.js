@@ -968,37 +968,77 @@ const browseProfiles = async (req, res) => {
       .skip((Number(page) - 1) * Number(limit))
       .limit(Number(limit));
 
-    // Enrich profiles with contact request relationship info for req.user
+    // Enrich profiles with contact request relationship info and Already Taken status
     const contactRequestsMap = {};
-    if (req.user && req.user._id && profiles.length > 0) {
+    const takenProfilesMap = {};
+
+    if (profiles.length > 0) {
       const profileIds = profiles.map((p) => p._id);
       const profileUserIds = profiles
         .map((p) => (p.userId && p.userId._id ? p.userId._id : p.userId))
         .filter(Boolean);
-      const myProfile = await UserProfile.findOne({ userId: req.user._id });
+      
+      let myProfile = null;
+      if (req.user && req.user._id) {
+        myProfile = await UserProfile.findOne({ userId: req.user._id });
 
-      const requests = await ContactRequest.find({
+        const requests = await ContactRequest.find({
+          $or: [
+            { requestedBy: req.user._id, requestedProfile: { $in: profileIds } },
+            { requestedBy: { $in: profileUserIds }, receiverUser: req.user._id },
+            ...(myProfile ? [{ requestedBy: { $in: profileUserIds }, requestedProfile: myProfile._id }] : []),
+          ],
+        });
+
+        requests.forEach((r) => {
+          if (r.requestedBy.toString() === req.user._id.toString()) {
+            contactRequestsMap[r.requestedProfile.toString()] = {
+              id: r._id,
+              status: r.status,
+              direction: 'sent',
+            };
+          } else {
+            contactRequestsMap[r.requestedBy.toString()] = {
+              id: r._id,
+              status: r.status,
+              direction: 'incoming',
+            };
+          }
+        });
+      }
+
+      // Check all Approved requests involving these profiles to mark "Already Taken" for third parties
+      const approvedRequests = await ContactRequest.find({
+        status: 'Approved',
         $or: [
-          { requestedBy: req.user._id, requestedProfile: { $in: profileIds } },
-          { requestedBy: { $in: profileUserIds }, receiverUser: req.user._id },
-          ...(myProfile ? [{ requestedBy: { $in: profileUserIds }, requestedProfile: myProfile._id }] : []),
+          { requestedProfile: { $in: profileIds } },
+          { requestedBy: { $in: profileUserIds } },
+          { receiverUser: { $in: profileUserIds } },
         ],
       });
 
-      requests.forEach((r) => {
-        if (r.requestedBy.toString() === req.user._id.toString()) {
-          contactRequestsMap[r.requestedProfile.toString()] = {
-            id: r._id,
-            status: r.status,
-            direction: 'sent',
-          };
-        } else {
-          contactRequestsMap[r.requestedBy.toString()] = {
-            id: r._id,
-            status: r.status,
-            direction: 'incoming',
-          };
-        }
+      approvedRequests.forEach((appReq) => {
+        const reqByStr = appReq.requestedBy ? appReq.requestedBy.toString() : '';
+        const reqProfStr = appReq.requestedProfile ? appReq.requestedProfile.toString() : '';
+        const recUserStr = appReq.receiverUser ? appReq.receiverUser.toString() : '';
+
+        profiles.forEach((p) => {
+          const pIdStr = p._id.toString();
+          const uIdStr = p.userId && p.userId._id ? p.userId._id.toString() : p.userId ? p.userId.toString() : '';
+          
+          if (pIdStr === reqProfStr || uIdStr === reqByStr || uIdStr === recUserStr) {
+            // Check if req.user is part of this approved request
+            const isUserInvolved = req.user && req.user._id && (
+              reqByStr === req.user._id.toString() ||
+              recUserStr === req.user._id.toString() ||
+              (myProfile && reqProfStr === myProfile._id.toString())
+            );
+
+            if (!isUserInvolved) {
+              takenProfilesMap[pIdStr] = true;
+            }
+          }
+        });
       });
     }
 
@@ -1006,7 +1046,18 @@ const browseProfiles = async (req, res) => {
       const pObj = safeProfile(p);
       const uId = p.userId && p.userId._id ? p.userId._id.toString() : p.userId ? p.userId.toString() : null;
       const reqInfo = contactRequestsMap[p._id.toString()] || (uId ? contactRequestsMap[uId] : null);
-      pObj.contactRequest = reqInfo || null;
+      
+      const isTaken = !!takenProfilesMap[p._id.toString()];
+      pObj.isTaken = isTaken;
+      
+      if (isTaken && (!reqInfo || reqInfo.status !== 'Approved')) {
+        pObj.contactRequest = {
+          status: 'Already Taken',
+          isTaken: true,
+        };
+      } else {
+        pObj.contactRequest = reqInfo || null;
+      }
       return pObj;
     });
 
@@ -1097,6 +1148,8 @@ const getPublicProfileById = async (req, res) => {
       return res.status(NOT_FOUND).json({ success: false, message: 'Eligible profile not found' });
     }
 
+    const targetUserId = profile.userId && profile.userId._id ? profile.userId._id : profile.userId;
+
     // 1. If Admin or Profile Owner -> Grant Full Access
     if (req.user && req.user._id) {
       const isOwner = profile.userId && profile.userId._id
@@ -1113,7 +1166,6 @@ const getPublicProfileById = async (req, res) => {
       }
 
       // 2. Check Reciprocal Contact Request Status between req.user and target profile
-      const targetUserId = profile.userId && profile.userId._id ? profile.userId._id : profile.userId;
       const myProfile = await UserProfile.findOne({ userId: req.user._id });
 
       const contactReq = await ContactRequest.findOne({
@@ -1133,7 +1185,37 @@ const getPublicProfileById = async (req, res) => {
         });
       }
 
-      // 3. Otherwise (No Request or Pending/Rejected Request) -> Restrict Full Access
+      // 3. Check if target profile has ANY Approved contact request with someone else ("Already Taken")
+      const takenCheck = await ContactRequest.findOne({
+        status: 'Approved',
+        $or: [
+          { requestedProfile: profile._id },
+          { requestedBy: targetUserId },
+          { receiverUser: targetUserId },
+        ],
+      });
+
+      if (takenCheck) {
+        return res.status(FORBIDDEN).json({
+          success: false,
+          accessGranted: false,
+          isTaken: true,
+          requestStatus: 'Already Taken',
+          message: 'This profile is already connected with another member (Already Taken).',
+          summary: {
+            _id: profile._id,
+            firstName: profile.firstName,
+            age: profile.age,
+            occupation: profile.occupation,
+            city: profile.city,
+            state: profile.state,
+            diocese: profile.diocese,
+            profileImage: profile.profileImage,
+          },
+        });
+      }
+
+      // 4. Otherwise (No Request or Pending/Rejected Request) -> Restrict Full Access
       let restrictMessage = 'Full profile details are restricted until your contact request is approved by Admin.';
       if (contactReq) {
         if (contactReq.status === 'Pending Member Review' || contactReq.status === 'Pending') {
@@ -1152,6 +1234,36 @@ const getPublicProfileById = async (req, res) => {
         accessGranted: false,
         requestStatus: contactReq ? contactReq.status : 'None',
         message: restrictMessage,
+        summary: {
+          _id: profile._id,
+          firstName: profile.firstName,
+          age: profile.age,
+          occupation: profile.occupation,
+          city: profile.city,
+          state: profile.state,
+          diocese: profile.diocese,
+          profileImage: profile.profileImage,
+        },
+      });
+    }
+
+    // Check if taken even for guest view
+    const guestTakenCheck = await ContactRequest.findOne({
+      status: 'Approved',
+      $or: [
+        { requestedProfile: profile._id },
+        { requestedBy: targetUserId },
+        { receiverUser: targetUserId },
+      ],
+    });
+
+    if (guestTakenCheck) {
+      return res.status(FORBIDDEN).json({
+        success: false,
+        accessGranted: false,
+        isTaken: true,
+        requestStatus: 'Already Taken',
+        message: 'This profile is already connected with another member (Already Taken).',
         summary: {
           _id: profile._id,
           firstName: profile.firstName,

@@ -806,8 +806,31 @@ export default function BrowseMembers() {
                           }}
                         />
 
-                        {/* Incoming Pending Request Badge */}
-                        {member.contactRequest?.direction === 'incoming' && (member.contactRequest?.status === 'Pending Member Review' || member.contactRequest?.status === 'Pending') && (
+                        {/* Already Taken Badge */}
+                        {(member.isTaken || member.contactRequest?.status === 'Already Taken') ? (
+                          <div style={{
+                            position: 'absolute',
+                            top: '12px',
+                            left: '12px',
+                            right: '12px',
+                            background: '#FEF2F2',
+                            border: '1.5px solid #EF4444',
+                            color: '#991B1B',
+                            padding: '6px 12px',
+                            borderRadius: '12px',
+                            fontSize: '11.5px',
+                            fontWeight: 800,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            boxShadow: '0 4px 12px rgba(239,68,68,0.2)',
+                            zIndex: 10
+                          }}>
+                            <Shield size={14} color="#DC2626" />
+                            <span>ALREADY TAKEN</span>
+                          </div>
+                        ) : member.contactRequest?.direction === 'incoming' && (member.contactRequest?.status === 'Pending Member Review' || member.contactRequest?.status === 'Pending') ? (
+                          /* Incoming Pending Request Badge */
                           <div style={{
                             position: 'absolute',
                             top: '12px',
@@ -829,7 +852,7 @@ export default function BrowseMembers() {
                             <Clock size={14} color="#D97706" />
                             <span>RECEIVED CONTACT REQUEST</span>
                           </div>
-                        )}
+                        ) : null}
                       </div>
 
                       {/* Card Body Details */}
@@ -923,6 +946,33 @@ export default function BrowseMembers() {
                           const fallbackStatus = requestStatuses[member._id] || 'None'
                           const status = req?.status || fallbackStatus
                           const isIncoming = req?.direction === 'incoming'
+
+                          // CASE 0: Already Taken -> Show disabled Already Taken button
+                          if (member.isTaken || status === 'Already Taken') {
+                            return (
+                              <button
+                                disabled
+                                style={{
+                                  width: '100%',
+                                  padding: '10px',
+                                  borderRadius: '12px',
+                                  background: '#FEF2F2',
+                                  border: '1.5px solid #FCA5A5',
+                                  color: '#991B1B',
+                                  fontSize: '12.5px',
+                                  fontWeight: 800,
+                                  cursor: 'not-allowed',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  gap: '6px'
+                                }}
+                              >
+                                <Shield size={15} color="#DC2626" />
+                                <span>Already Taken</span>
+                              </button>
+                            )
+                          }
 
                           // CASE 1: Incoming Pending Request for User B -> Show ACCEPT & REJECT buttons
                           if (isIncoming && (status === 'Pending Member Review' || status === 'Pending')) {
