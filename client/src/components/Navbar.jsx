@@ -39,7 +39,7 @@ export default function Navbar() {
         alignItems: 'center',
         justifyContent: 'space-between'
       }}>
-        {/* Brand Logo - Ave Maria Matrimony */}
+        {/* Brand Logo - SJC Matrimony */}
         <Link to="/" className="navbar-logo" onClick={() => setMobileMenuOpen(false)} style={{
           display: 'flex',
           alignItems: 'center',
@@ -51,7 +51,7 @@ export default function Navbar() {
           fontWeight: 700,
           letterSpacing: '-0.01em'
         }}>
-          <span style={{ fontWeight: 700, color: '#1E2B45' }}>Ave Maria Matrimony</span>
+          <span style={{ fontWeight: 700, color: '#1E2B45' }}>SJC Matrimony</span>
         </Link>
 
         {/* Center Nav Links (Centrally Positioned) */}
@@ -66,15 +66,17 @@ export default function Navbar() {
           <Link to="/" style={navItemStyle('/')}>
             Home
           </Link>
-          <Link to="/browse" style={navItemStyle('/browse')}>
-            Browse Members
-          </Link>
+          {user && (
+            <Link to="/browse" style={navItemStyle('/browse')}>
+              Matches
+            </Link>
+          )}
           <Link to="/subscription" style={navItemStyle('/subscription')}>
             Membership
           </Link>
           {user && (
             <Link to="/my-contact-requests" style={navItemStyle('/my-contact-requests')}>
-              Contact Requests
+             Connect
             </Link>
           )}
         </div>
@@ -191,9 +193,11 @@ export default function Navbar() {
           <Link to="/" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: '15px', fontWeight: isActive('/') ? 700 : 500, color: isActive('/') ? '#1E2B45' : '#475467', textDecoration: 'none' }}>
             Home
           </Link>
-          <Link to="/browse" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: '15px', fontWeight: isActive('/browse') ? 700 : 500, color: isActive('/browse') ? '#1E2B45' : '#475467', textDecoration: 'none' }}>
-            Browse Members
-          </Link>
+          {user && (
+            <Link to="/browse" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: '15px', fontWeight: isActive('/browse') ? 700 : 500, color: isActive('/browse') ? '#1E2B45' : '#475467', textDecoration: 'none' }}>
+              Matches
+            </Link>
+          )}
           <Link to="/subscription" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: '15px', fontWeight: isActive('/subscription') ? 700 : 500, color: isActive('/subscription') ? '#1E2B45' : '#475467', textDecoration: 'none' }}>
             Membership
           </Link>

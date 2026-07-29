@@ -19,14 +19,63 @@ export default function Home({ scrollToSubscription }) {
   const [ageTo, setAgeTo] = useState(35)
   const [selectedDiocese, setSelectedDiocese] = useState('')
 
-  // Dynamic Featured Members State
-  const [featuredMembers, setFeaturedMembers] = useState([])
-  const [loadingMembers, setLoadingMembers] = useState(true)
-  const [requestStatuses, setRequestStatuses] = useState({})
-  const [submittingId, setSubmittingId] = useState(null)
-
-  // FAQ Accordion State
+  // Bible Verses Slider State
+  const [currentVerseIndex, setCurrentVerseIndex] = useState(0)
   const [openFaq, setOpenFaq] = useState(0)
+
+  const bibleVerses = [
+    {
+      verse: 'Mark 10:9',
+      text: 'Therefore what God has joined together, let no one separate.',
+      context: 'The Covenant of Sacramental Unity',
+      theme: 'God’s Blessing'
+    },
+    {
+      verse: '1 Corinthians 13:4-7',
+      text: 'Love is patient, love is kind. It does not envy, it does not boast, it is not proud. It always protects, always trusts, always hopes, always perseveres.',
+      context: 'The Essence of Christian Love',
+      theme: 'Sacred Love'
+    },
+    {
+      verse: 'Genesis 2:24',
+      text: 'That is why a man leaves his father and mother and is united to his wife, and they become one flesh.',
+      context: 'The Sacred Foundation of Family',
+      theme: 'Holy Union'
+    },
+    {
+      verse: 'Ecclesiastes 4:9-12',
+      text: 'Two are better than one, because they have a good return for their labor: If either of them falls down, one can help the other up. A cord of three strands is not quickly broken.',
+      context: 'Strength in Shared Faith',
+      theme: 'Partnership'
+    },
+    {
+      verse: 'Colossians 3:14',
+      text: 'And over all these virtues put on love, which binds them all together in perfect unity.',
+      context: 'The Bond of Perfect Peace',
+      theme: 'Unity'
+    },
+    {
+      verse: 'Ephesians 5:31',
+      text: 'For this reason a man will leave his father and mother and be united to his wife, and the two will become one flesh.',
+      context: 'Spiritual Oneness in Marriage',
+      theme: 'Sacramental Oneness'
+    }
+  ]
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentVerseIndex((prev) => (prev + 1) % bibleVerses.length)
+    }, 5000)
+    return () => clearInterval(timer)
+  }, [bibleVerses.length])
+
+  const nextVerse = () => {
+    setCurrentVerseIndex((prev) => (prev + 1) % bibleVerses.length)
+  }
+
+  const prevVerse = () => {
+    setCurrentVerseIndex((prev) => (prev - 1 + bibleVerses.length) % bibleVerses.length)
+  }
 
   useEffect(() => {
     fetchFeaturedMembers()
@@ -206,7 +255,7 @@ export default function Home({ scrollToSubscription }) {
       <section style={{
         position: 'relative',
         minHeight: '520px',
-        backgroundImage: `linear-gradient(180deg, rgba(30, 43, 69, 0.45) 0%, rgba(30, 43, 69, 0.7) 100%), url('https://images.unsplash.com/photo-1548625149-fc4a29cf7092?auto=format&fit=crop&w=1600&q=80')`,
+        backgroundImage: `linear-gradient(180deg, rgba(26, 37, 56, 0.5) 0%, rgba(26, 37, 56, 0.75) 100%), url('https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=1920&q=80')`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         display: 'flex',
@@ -287,312 +336,217 @@ export default function Home({ scrollToSubscription }) {
 
 
       {/* ─────────────────────────────────────────────────────────────
-          2. FEATURED PROFILES SECTION (Matching Image 2)
+          2. SACRED SCRIPTURE SLIDER FOR HOLY MATRIMONY
          ───────────────────────────────────────────────────────────── */}
-      <section style={{ padding: '80px 24px', maxWidth: '1240px', margin: '0 auto' }}>
+      <section style={{ padding: '80px 24px', maxWidth: '1100px', margin: '0 auto' }}>
         
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '36px' }}>
-          <div>
-            <h2 style={{
-              fontFamily: "'Cormorant Garamond', serif",
-              fontSize: '36px',
-              fontWeight: 700,
-              color: '#1E2B45',
-              margin: '0 0 6px 0'
-            }}>
-              Featured Profiles
-            </h2>
-            <p style={{ fontSize: '14px', color: '#64748B', margin: 0 }}>
-              Faithful individuals seeking a sacramental union.
-            </p>
+        <div style={{ textAlign: 'center', maxWidth: '720px', margin: '0 auto 40px auto' }}>
+          <div style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            background: '#FEF3C7',
+            color: '#745A1C',
+            padding: '6px 18px',
+            borderRadius: '20px',
+            fontSize: '13px',
+            fontWeight: 700,
+            marginBottom: '14px'
+          }}>
+            <BookOpen size={16} />
+            <span>Divine Words of Wisdom</span>
           </div>
 
-          <Link 
-            to="/browse"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              fontSize: '14px',
-              fontWeight: 600,
-              color: '#1E2B45',
-              textDecoration: 'none'
-            }}
-          >
-            <span>View All</span>
-            <ArrowRight size={15} />
-          </Link>
+          <h2 style={{
+            fontFamily: "'Cormorant Garamond', serif",
+            fontSize: '40px',
+            fontWeight: 700,
+            color: '#1E2B45',
+            margin: '0 0 12px 0'
+          }}>
+            Holy Scripture on Marriage
+          </h2>
+          <p style={{ fontSize: '15px', color: '#64748B', lineHeight: 1.6, margin: 0 }}>
+            Marriage is a holy sacrament ordained by God. Reflect on sacred verses that guide lifelong love, unity, and faith.
+          </p>
         </div>
 
-        {/* Profiles Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {featuredMembers.map((member) => (
-            <div 
-              key={member._id}
-              style={{
-                background: '#FFFFFF',
-                border: '1px solid #EAE5DC',
-                borderRadius: '20px',
-                overflow: 'hidden',
-                boxShadow: '0 4px 16px rgba(0,0,0,0.03)',
-                display: 'flex',
-                flexDirection: 'column'
-              }}
-              onMouseOver={e => {
-                e.currentTarget.style.transform = 'translateY(-4px)'
-                e.currentTarget.style.boxShadow = '0 12px 28px rgba(0,0,0,0.08)'
-              }}
-              onMouseOut={e => {
-                e.currentTarget.style.transform = 'none'
-                e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.03)'
-              }}
-            >
-              {/* Photo Box with Premium Badge */}
-              <div style={{ position: 'relative', height: '240px', background: '#F3F0E9' }}>
-                <img 
-                  src={member.profileImage || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80'} 
-                  alt={member.firstName}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                />
-                <span style={{
-                  position: 'absolute',
-                  top: '12px',
-                  right: '12px',
-                  background: '#FEF3C7',
-                  color: '#745A1C',
-                  fontSize: '11px',
-                  fontWeight: 700,
-                  padding: '3px 10px',
-                  borderRadius: '12px',
-                  boxShadow: '0 2px 6px rgba(0,0,0,0.1)'
-                }}>
-                  ★ Premium
+        {/* Carousel Slider Card Container */}
+        <div style={{
+          position: 'relative',
+          background: 'linear-gradient(135deg, #FFFFFF 0%, #FDFBF7 100%)',
+          border: '1.5px solid #EAE5DC',
+          borderRadius: '32px',
+          padding: '56px 48px 40px 48px',
+          boxShadow: '0 12px 40px rgba(30, 43, 69, 0.06)',
+          overflow: 'hidden',
+          minHeight: '340px',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between'
+        }}>
+          {/* Decorative Background Quote Mark */}
+          <div style={{
+            position: 'absolute',
+            top: '16px',
+            left: '32px',
+            fontFamily: "'Cormorant Garamond', serif",
+            fontSize: '160px',
+            lineHeight: 1,
+            color: '#F3EAD6',
+            fontWeight: 700,
+            userSelect: 'none',
+            pointerEvents: 'none',
+            zIndex: 0
+          }}>
+            “
+          </div>
+
+          {/* Decorative Corner Church Icon */}
+          <div style={{
+            position: 'absolute',
+            top: '28px',
+            right: '36px',
+            opacity: 0.15,
+            pointerEvents: 'none'
+          }}>
+            <Church size={64} color="#745A1C" />
+          </div>
+
+          {/* Slide Content */}
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            
+            {/* Top Meta Bar */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '28px', flexWrap: 'wrap', gap: '12px' }}>
+              <span style={{
+                fontSize: '12px',
+                fontWeight: 700,
+                color: '#745A1C',
+                background: '#FEF3C7',
+                border: '1px solid #FDE68A',
+                padding: '6px 16px',
+                borderRadius: '16px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}>
+                <Sparkles size={14} color="#745A1C" />
+                {bibleVerses[currentVerseIndex].context}
+              </span>
+
+              <span style={{ fontSize: '13px', fontWeight: 600, color: '#94A3B8' }}>
+                Verse {currentVerseIndex + 1} of {bibleVerses.length}
+              </span>
+            </div>
+
+            {/* Quote Text */}
+            <p style={{
+              fontFamily: "'Cormorant Garamond', serif",
+              fontSize: '28px',
+              fontStyle: 'italic',
+              fontWeight: 600,
+              lineHeight: 1.5,
+              color: '#1E2B45',
+              marginBottom: '32px',
+              minHeight: '90px',
+              transition: 'all 0.4s ease'
+            }}>
+              "{bibleVerses[currentVerseIndex].text}"
+            </p>
+
+            {/* Scripture Reference Author */}
+            <div style={{ borderTop: '1px dashed #EAE5DC', paddingTop: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <h4 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '22px', fontWeight: 700, color: '#745A1C', margin: '0 0 2px 0' }}>
+                  — {bibleVerses[currentVerseIndex].verse}
+                </h4>
+                <span style={{ fontSize: '12px', color: '#64748B', fontWeight: 500 }}>
+                  Holy Bible • {bibleVerses[currentVerseIndex].theme}
                 </span>
               </div>
 
-              {/* Profile Card Body */}
-              <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', flex: 1, justifyContent: 'space-between' }}>
-                <div>
-                  <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '22px', fontWeight: 700, color: '#1E2B45', margin: '0 0 4px 0' }}>
-                    {member.firstName}, {member.age || 26}
-                  </h3>
+              {/* Navigation Arrows */}
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                <button
+                  onClick={prevVerse}
+                  aria-label="Previous Verse"
+                  style={{
+                    width: '44px',
+                    height: '44px',
+                    borderRadius: '50%',
+                    border: '1.5px solid #EAE5DC',
+                    background: '#FFFFFF',
+                    color: '#1E2B45',
+                    display: 'grid',
+                    placeItems: 'center',
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseOver={e => {
+                    e.currentTarget.style.background = '#1E2B45'
+                    e.currentTarget.style.color = '#FFFFFF'
+                  }}
+                  onMouseOut={e => {
+                    e.currentTarget.style.background = '#FFFFFF'
+                    e.currentTarget.style.color = '#1E2B45'
+                  }}
+                >
+                  <ChevronLeft size={20} />
+                </button>
 
-                  <p style={{ fontSize: '13px', color: '#64748B', margin: '0 0 12px 0', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <MapPin size={13} color="#64748B" />
-                    <span>{member.diocese || 'Archdiocese of Boston'}</span>
-                  </p>
-
-                  <p style={{ fontSize: '13px', color: '#475467', fontStyle: 'italic', lineHeight: 1.5, margin: '0 0 16px 0' }}>
-                    "{member.quote || 'Seeking a partner to grow in Grace and build a family together.'}"
-                  </p>
-                </div>
-
-                {/* Dynamic Contact Request CTA Button */}
-                {(() => {
-                  const req = member.contactRequest
-                  const fallbackStatus = requestStatuses[member._id] || 'None'
-                  const status = req?.status || fallbackStatus
-                  const isIncoming = req?.direction === 'incoming'
-
-                  // CASE 1: Incoming Pending Request -> Show ACCEPT & REJECT buttons
-                  if (isIncoming && (status === 'Pending Member Review' || status === 'Pending')) {
-                    return (
-                      <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
-                        <button
-                          onClick={(e) => handleRejectContactRequest(e, member, req.id)}
-                          disabled={submittingId === member._id}
-                          style={{
-                            flex: 1,
-                            padding: '9px 6px',
-                            borderRadius: '10px',
-                            background: '#FFFFFF',
-                            color: '#DC2626',
-                            border: '1.5px solid #FCA5A5',
-                            fontSize: '12.5px',
-                            fontWeight: 700,
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '4px'
-                          }}
-                        >
-                          <X size={14} strokeWidth={3} />
-                          <span>Reject</span>
-                        </button>
-
-                        <button
-                          onClick={(e) => handleAcceptContactRequest(e, member, req.id)}
-                          disabled={submittingId === member._id}
-                          style={{
-                            flex: 1.2,
-                            padding: '9px 6px',
-                            borderRadius: '10px',
-                            background: '#059669',
-                            color: '#FFFFFF',
-                            border: 'none',
-                            fontSize: '12.5px',
-                            fontWeight: 700,
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '4px',
-                            boxShadow: '0 2px 6px rgba(5,150,105,0.25)'
-                          }}
-                        >
-                          {submittingId === member._id ? (
-                            <Loader2 size={14} className="animate-spin" />
-                          ) : (
-                            <Check size={14} strokeWidth={3} />
-                          )}
-                          <span>Accept</span>
-                        </button>
-                      </div>
-                    )
-                  }
-
-                  if (status === 'Approved') {
-                    return (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          navigate(`/members/${member._id}`)
-                        }}
-                        style={{
-                          width: '100%',
-                          padding: '10px',
-                          borderRadius: '10px',
-                          background: '#1E2B45',
-                          color: '#FFFFFF',
-                          border: 'none',
-                          fontSize: '13px',
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '6px'
-                        }}
-                      >
-                        <CheckCircle2 size={15} color="#059669" />
-                        <span>View Full Profile</span>
-                      </button>
-                    )
-                  }
-
-                  if (status === 'Pending Admin Verification') {
-                    return (
-                      <button
-                        disabled
-                        style={{
-                          width: '100%',
-                          padding: '10px',
-                          borderRadius: '10px',
-                          background: '#EFF6FF',
-                          border: '1px solid #BFDBFE',
-                          color: '#1D4ED8',
-                          fontSize: '12px',
-                          fontWeight: 700,
-                          cursor: 'not-allowed',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '6px'
-                        }}
-                      >
-                        <Clock size={15} color="#1D4ED8" />
-                        <span>Accepted — Pending Admin</span>
-                      </button>
-                    )
-                  }
-
-                  if (status === 'Pending Member Review' || status === 'Pending') {
-                    return (
-                      <button
-                        disabled
-                        style={{
-                          width: '100%',
-                          padding: '10px',
-                          borderRadius: '10px',
-                          background: '#FFFBEB',
-                          border: '1px solid #FDE68A',
-                          color: '#D97706',
-                          fontSize: '12px',
-                          fontWeight: 700,
-                          cursor: 'not-allowed',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '6px'
-                        }}
-                      >
-                        <Clock size={15} color="#D97706" />
-                        <span>Awaiting Member Review</span>
-                      </button>
-                    )
-                  }
-
-                  if (status === 'Rejected by Member') {
-                    return (
-                      <button
-                        disabled
-                        style={{
-                          width: '100%',
-                          padding: '10px',
-                          borderRadius: '10px',
-                          background: '#FEF2F2',
-                          border: '1px solid #FCA5A5',
-                          color: '#DC2626',
-                          fontSize: '12px',
-                          fontWeight: 700,
-                          cursor: 'not-allowed',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '6px'
-                        }}
-                      >
-                        <X size={15} color="#DC2626" />
-                        <span>Request Rejected</span>
-                      </button>
-                    )
-                  }
-
-                  return (
-                    <button
-                      onClick={(e) => handleSendContactRequest(e, member)}
-                      disabled={submittingId === member._id}
-                      style={{
-                        width: '100%',
-                        padding: '10px',
-                        borderRadius: '10px',
-                        background: '#FFFFFF',
-                        border: '1.5px solid #1E2B45',
-                        color: '#1E2B45',
-                        fontSize: '13px',
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '6px'
-                      }}
-                    >
-                      {submittingId === member._id ? (
-                        <span>Sending Request...</span>
-                      ) : (
-                        <>
-                          <Shield size={15} color="#1E2B45" />
-                          <span>Request Contact Info</span>
-                        </>
-                      )}
-                    </button>
-                  )
-                })()}
+                <button
+                  onClick={nextVerse}
+                  aria-label="Next Verse"
+                  style={{
+                    width: '44px',
+                    height: '44px',
+                    borderRadius: '50%',
+                    border: '1.5px solid #EAE5DC',
+                    background: '#FFFFFF',
+                    color: '#1E2B45',
+                    display: 'grid',
+                    placeItems: 'center',
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseOver={e => {
+                    e.currentTarget.style.background = '#1E2B45'
+                    e.currentTarget.style.color = '#FFFFFF'
+                  }}
+                  onMouseOut={e => {
+                    e.currentTarget.style.background = '#FFFFFF'
+                    e.currentTarget.style.color = '#1E2B45'
+                  }}
+                >
+                  <ChevronRight size={20} />
+                </button>
               </div>
             </div>
-          ))}
+
+          </div>
+
+          {/* Bottom Dot Indicators */}
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '28px', zIndex: 1 }}>
+            {bibleVerses.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={() => setCurrentVerseIndex(idx)}
+                aria-label={`Go to slide ${idx + 1}`}
+                style={{
+                  width: currentVerseIndex === idx ? '28px' : '9px',
+                  height: '9px',
+                  borderRadius: '10px',
+                  border: 'none',
+                  background: currentVerseIndex === idx ? '#745A1C' : '#CBD5E1',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease'
+                }}
+              />
+            ))}
+          </div>
+
         </div>
 
       </section>

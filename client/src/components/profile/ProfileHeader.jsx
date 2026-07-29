@@ -56,26 +56,6 @@ export default function ProfileHeader({ profile, onProfileUpdate }) {
         ) : (
           <div className="cover-placeholder" />
         )}
-        <button
-          className="cover-upload-btn"
-          onClick={() => coverInputRef.current?.click()}
-          disabled={uploadingCover}
-          title="Change cover photo"
-        >
-          {uploadingCover ? (
-            <span className="upload-spinner" />
-          ) : (
-            <Camera size={16} />
-          )}
-          {uploadingCover ? '' : 'Change Cover'}
-        </button>
-        <input
-          ref={coverInputRef}
-          type="file"
-          accept="image/jpeg,image/jpg,image/png,image/webp"
-          onChange={(e) => handlePhotoUpload(e.target.files[0], 'cover')}
-          className="file-input-hidden"
-        />
       </div>
 
       {/* Avatar + Info */}
