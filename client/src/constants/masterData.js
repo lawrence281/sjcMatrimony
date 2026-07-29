@@ -370,8 +370,8 @@ export const VERIFICATION_STATUSES = ['Unverified', 'Verified', 'Rejected'];
 
 // Profile completion section weights (for display)
 export const COMPLETION_SECTIONS = [
-  { key: 'basic', label: 'Basic Details', weight: 15 },
-  { key: 'photos', label: 'Photos', weight: 15 },
+  { key: 'basic', label: 'Basic Details', weight: 20 },
+  { key: 'photos', label: 'Photos', weight: 20 },
   { key: 'religion', label: 'Religion', weight: 10 },
   { key: 'education', label: 'Education', weight: 10 },
   { key: 'career', label: 'Career', weight: 10 },
@@ -379,7 +379,6 @@ export const COMPLETION_SECTIONS = [
   { key: 'preference', label: 'Partner Preference', weight: 10 },
   { key: 'address', label: 'Address', weight: 10 },
   { key: 'about', label: 'About Me', weight: 10 },
-  { key: 'documents', label: 'Documents', weight: 10 },
 ];
 
 export const AGE_OPTIONS = Array.from({ length: 53 }, (_, i) => i + 18); // 18–70

@@ -68,31 +68,6 @@ export const removeGalleryPhoto = (photoId) =>
   api.delete(`/profile/me/gallery/${photoId}`)
 
 /**
- * Upload a document.
- * @param {File}   file    - PDF or image
- * @param {string} docType - idProof | baptismCertificate | other
- * @param {string} label   - human-readable label
- * @param {function} onUploadProgress
- */
-export const uploadDocument = (file, docType = 'other', label = '', onUploadProgress) => {
-  const formData = new FormData()
-  formData.append('document', file)
-  formData.append('docType', docType)
-  formData.append('label', label)
-  return api.post('/profile/me/documents', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-    onUploadProgress,
-  })
-}
-
-/**
- * Remove a document.
- * @param {string} docId - MongoDB subdoc _id
- */
-export const removeDocument = (docId) =>
-  api.delete(`/profile/me/documents/${docId}`)
-
-/**
  * Get profile completion breakdown.
  */
 export const getProfileCompletion = () => api.get('/profile/me/completion')

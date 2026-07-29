@@ -1,4 +1,4 @@
-import { Camera, Shield, Star } from 'lucide-react'
+import { Camera, ShieldCheck, Star, MapPin, Briefcase, Church, UserCheck } from 'lucide-react'
 import { useState, useRef } from 'react'
 import { uploadPhoto } from '../../services/profileService'
 import toast from 'react-hot-toast'
@@ -13,22 +13,19 @@ function resolveUrl(url) {
 
 export default function ProfileHeader({ profile, onProfileUpdate }) {
   const profileInputRef = useRef(null)
-  const coverInputRef = useRef(null)
   const [uploadingProfile, setUploadingProfile] = useState(false)
-  const [uploadingCover, setUploadingCover] = useState(false)
 
-  const handlePhotoUpload = async (file, type) => {
+  const handlePhotoUpload = async (file) => {
     if (!file) return
-    const setLoading = type === 'profile' ? setUploadingProfile : setUploadingCover
-    setLoading(true)
+    setUploadingProfile(true)
     try {
-      const res = await uploadPhoto(file, type)
-      toast.success(`${type === 'profile' ? 'Profile' : 'Cover'} photo updated!`)
+      const res = await uploadPhoto(file, 'profile')
+      toast.success('Profile photo updated!')
       onProfileUpdate && onProfileUpdate(res.data.profile)
     } catch (err) {
       toast.error(err.response?.data?.message || 'Upload failed')
     } finally {
-      setLoading(false)
+      setUploadingProfile(false)
     }
   }
 
@@ -47,20 +44,24 @@ export default function ProfileHeader({ profile, onProfileUpdate }) {
     .toUpperCase()
     .slice(0, 2)
 
+  const defaultCover = 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1600&q=80'
+
   return (
-    <div className="profile-header-card">
-      {/* Cover Photo */}
-      <div className="profile-cover">
-        {coverPhoto ? (
-          <img src={coverPhoto} alt="Cover" className="cover-img" />
-        ) : (
-          <div className="cover-placeholder" />
-        )}
+    <div className="profile-hero-card">
+      {/* Hero Cover Image */}
+      <div className="profile-hero-cover">
+        <img
+          src={coverPhoto || defaultCover}
+          alt="Christian Matrimony Banner"
+          className="hero-cover-img"
+        />
+        <div className="hero-cover-overlay" />
       </div>
 
-      {/* Avatar + Info */}
-      <div className="profile-header-body">
-        <div className="profile-avatar-wrap">
+      {/* Hero Main Body */}
+      <div className="profile-hero-body">
+        {/* Avatar Ring */}
+        <div className="profile-avatar-wrapper">
           <div className="profile-avatar-ring">
             {profilePhoto ? (
               <img src={profilePhoto} alt={fullName} className="profile-avatar-img" />
@@ -69,67 +70,89 @@ export default function ProfileHeader({ profile, onProfileUpdate }) {
             )}
           </div>
           <button
-            className="avatar-upload-btn"
+            className="avatar-upload-trigger"
             onClick={() => profileInputRef.current?.click()}
             disabled={uploadingProfile}
-            title="Change profile photo"
+            title="Update Profile Photo"
           >
-            {uploadingProfile ? <span className="upload-spinner sm" /> : <Camera size={14} />}
+            {uploadingProfile ? <span className="upload-spinner sm" /> : <Camera size={15} />}
           </button>
           <input
             ref={profileInputRef}
             type="file"
             accept="image/jpeg,image/jpg,image/png,image/webp"
-            onChange={(e) => handlePhotoUpload(e.target.files[0], 'profile')}
+            onChange={(e) => handlePhotoUpload(e.target.files[0])}
             className="file-input-hidden"
           />
         </div>
 
-        <div className="profile-header-info">
-          <div className="profile-name-row">
-            <h1 className="profile-display-name">{fullName}</h1>
-            {profile?.premiumMember && (
-              <span className="premium-badge">
-                <Star size={12} fill="currentColor" />
-                Premium
+        {/* Main Details & Badges */}
+        <div className="profile-hero-details">
+          <div className="profile-title-bar">
+            <h1 className="profile-hero-name">{fullName}</h1>
+            <div className="profile-badges-row">
+              {profile?.verificationStatus === 'Verified' && (
+                <span className="hero-badge badge-verified">
+                  <ShieldCheck size={13} />
+                  Verified Profile
+                </span>
+              )}
+              {profile?.premiumMember && (
+                <span className="hero-badge badge-premium">
+                  <Star size={13} fill="currentColor" />
+                  Premium Member
+                </span>
+              )}
+              {profile?.membershipType && profile.membershipType !== 'Free' && (
+                <span className={`hero-badge badge-membership membership-${profile.membershipType.toLowerCase()}`}>
+                  {profile.membershipType} Plan
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Quick Metadata Pills */}
+          <div className="profile-metadata-pills">
+            {profile?.age && (
+              <span className="meta-pill">
+                <UserCheck size={13} className="pill-icon" />
+                {profile.age} Yrs, {profile.gender || 'Member'}
               </span>
             )}
-            {profile?.verificationStatus === 'Verified' && (
-              <span className="verified-badge">
-                <Shield size={12} />
-                Verified
+            {(profile?.diocese || profile?.denomination) && (
+              <span className="meta-pill">
+                <Church size={13} className="pill-icon" />
+                {[profile.denomination, profile.diocese].filter(Boolean).join(' · ')}
+              </span>
+            )}
+            {(profile?.occupation || profile?.designation) && (
+              <span className="meta-pill">
+                <Briefcase size={13} className="pill-icon" />
+                {[profile.designation || profile.occupation, profile.company].filter(Boolean).join(' at ')}
+              </span>
+            )}
+            {(profile?.city || profile?.district || profile?.state) && (
+              <span className="meta-pill">
+                <MapPin size={13} className="pill-icon" />
+                {[profile.city || profile.district, profile.state].filter(Boolean).join(', ')}
               </span>
             )}
           </div>
-          <p className="profile-subline">
-            {[
-              profile?.age ? `${profile.age} yrs` : null,
-              profile?.denomination,
-              profile?.district,
-              profile?.state,
-            ]
-              .filter(Boolean)
-              .join(' · ')}
-          </p>
 
-          {/* Completion bar */}
-          <div className="profile-completion-mini">
-            <div className="completion-bar-track">
+          {/* Completion Progress Bar */}
+          <div className="hero-completion-wrapper">
+            <div className="hero-completion-text">
+              <span>Profile Strength</span>
+              <strong>{completion}% Complete</strong>
+            </div>
+            <div className="hero-completion-track">
               <div
-                className="completion-bar-fill"
+                className="hero-completion-fill"
                 style={{ width: `${completion}%` }}
               />
             </div>
-            <span className="completion-pct">{completion}% complete</span>
           </div>
         </div>
-
-        {/* Membership badge */}
-        {profile?.membershipType && profile.membershipType !== 'Free' && (
-          <div className={`membership-pill membership-${profile.membershipType.toLowerCase()}`}>
-            {profile.membershipType}
-          </div>
-        )}
       </div>
     </div>
   )

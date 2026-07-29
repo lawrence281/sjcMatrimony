@@ -248,14 +248,14 @@ userProfileSchema.statics.calculateCompletion = function (profile) {
     preference: 0, // 10%
     address: 0,    // 10%
     about: 0,      // 10%
-    photos: 0,     // 15%
-    documents: 0,  // 10%
+    photos: 0,     // 20%
+    basic: 0,      // 20%
   };
 
-  // Basic (15%) — 5 key fields
+  // Basic (20%) — 5 key fields
   const basicFields = ['firstName', 'lastName', 'gender', 'dateOfBirth', 'mobileNumber'];
   const basicFilled = basicFields.filter((f) => profile[f] && profile[f] !== '').length;
-  scores.basic = Math.round((basicFilled / basicFields.length) * 15);
+  scores.basic = Math.round((basicFilled / basicFields.length) * 20);
 
   // Religion (10%) — 4 key fields
   const religionFields = ['denomination', 'diocese', 'church', 'churchAddress'];
@@ -290,11 +290,8 @@ userProfileSchema.statics.calculateCompletion = function (profile) {
   // About (10%) — 1 field
   scores.about = profile.aboutMe && profile.aboutMe.length > 20 ? 10 : 0;
 
-  // Photos (15%) — profile photo = 10, cover = 5
-  scores.photos = (profile.profileImage ? 10 : 0) + (profile.coverImage ? 5 : 0);
-
-  // Documents (10%) — any document uploaded
-  scores.documents = profile.documents && profile.documents.length > 0 ? 10 : 0;
+  // Photos (20%) — profile photo = 12, cover = 8
+  scores.photos = (profile.profileImage ? 12 : 0) + (profile.coverImage ? 8 : 0);
 
   const total = Object.values(scores).reduce((a, b) => a + b, 0);
   return { total: Math.min(total, 100), breakdown: scores };

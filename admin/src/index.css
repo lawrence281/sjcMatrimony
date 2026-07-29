@@ -1,47 +1,55 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 :root {
-  --bg-primary: #0f1117;
-  --bg-secondary: #1a1d27;
-  --bg-card: #1e2130;
-  --bg-hover: #252840;
-  --accent: #ff4d00;
-  --accent-light: #ff6a26;
-  --accent-glow: rgba(255, 77, 0, 0.15);
-  --success: #22c55e;
+  --bg-primary: #f8faf9;
+  --bg-secondary: #ffffff;
+  --bg-card: #ffffff;
+  --bg-hover: #f3f0e9;
+  --primary-navy: #1E2B45;
+  --accent: #C59B4E;
+  --accent-light: #d4af67;
+  --accent-dark: #745A1C;
+  --accent-glow: rgba(197, 155, 78, 0.15);
+  --success: #10b981;
   --warning: #f59e0b;
   --danger: #ef4444;
   --info: #3b82f6;
-  --text-primary: #f1f3f9;
-  --text-secondary: #8b93a7;
-  --text-muted: #5a6072;
-  --border: rgba(255,255,255,0.08);
-  --border-hover: rgba(255, 77, 0, 0.4);
+  --text-primary: #1E2B45;
+  --text-secondary: #475467;
+  --text-muted: #667085;
+  --border: #eae5dc;
+  --border-hover: #C59B4E;
   --sidebar-width: 250px;
   --header-height: 64px;
+  --font-serif: 'Cormorant Garamond', Georgia, serif;
+  --font-sans: 'Inter', sans-serif;
 }
 
-.light-theme {
-  --bg-primary: #f8fafc;
-  --bg-secondary: #ffffff;
-  --bg-card: #ffffff;
-  --bg-hover: #f1f5f9;
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
+.dark-theme {
+  --bg-primary: #141D30;
+  --bg-secondary: #1E2B45;
+  --bg-card: #1E2B45;
+  --bg-hover: #253452;
+  --text-primary: #f8faf9;
+  --text-secondary: #cbd5e1;
   --text-muted: #94a3b8;
-  --border: rgba(0,0,0,0.08);
-  --accent-glow: rgba(255, 77, 0, 0.1);
+  --border: rgba(234, 229, 220, 0.15);
+  --border-hover: #C59B4E;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 html { font-size: 14px; }
 body {
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-sans);
   background: var(--bg-primary);
   color: var(--text-primary);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   transition: background-color 0.25s, color 0.25s;
+}
+
+h1, h2, h3, h4, h5, h6, .page-title, .card-title, .heading-serif {
+  font-family: var(--font-serif);
 }
 
 .card, .sidebar, .sidebar-nav a, .btn, .form-input, .form-select, .form-textarea, .stat-card {
