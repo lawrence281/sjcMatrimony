@@ -286,9 +286,9 @@ const getIncomingContactRequests = async (req, res) => {
               state: senderProfile.state || '',
               ...(requestItem.status === 'Approved'
                 ? {
-                    phone: senderProfile.mobileNumber || requestItem.requestedBy.phone || 'Not provided',
-                    email: senderProfile.email || requestItem.requestedBy.email || 'Not provided',
-                  }
+                  phone: senderProfile.mobileNumber || requestItem.requestedBy.phone || 'Not provided',
+                  email: senderProfile.email || requestItem.requestedBy.email || 'Not provided',
+                }
                 : {}),
             };
           } else {
@@ -305,9 +305,9 @@ const getIncomingContactRequests = async (req, res) => {
               state: '',
               ...(requestItem.status === 'Approved'
                 ? {
-                    phone: requestItem.requestedBy.phone || 'Not provided',
-                    email: requestItem.requestedBy.email || 'Not provided',
-                  }
+                  phone: requestItem.requestedBy.phone || 'Not provided',
+                  email: requestItem.requestedBy.email || 'Not provided',
+                }
                 : {}),
             };
           }
@@ -539,19 +539,21 @@ const adminGetAllRequests = async (req, res) => {
   try {
     const { status, search, page = 1, limit = 10 } = req.query;
 
-    const query = {
-      status: {
-        $nin: ['Pending Member Review', 'Rejected by Member'],
-      },
-    };
+    const query = {};
 
     if (status && status !== 'All') {
-      if (status === 'Pending' || status === 'Pending Admin Verification') {
+      if (status === 'Pending Member Review') {
+        query.status = 'Pending Member Review';
+      } else if (status === 'Pending Admin Verification' || status === 'Pending') {
         query.status = { $in: ['Pending Admin Verification', 'Pending'] };
       } else if (status === 'Approved') {
         query.status = 'Approved';
-      } else if (status === 'Rejected' || status === 'Rejected by Admin') {
+      } else if (status === 'Rejected by Member') {
+        query.status = 'Rejected by Member';
+      } else if (status === 'Rejected by Admin' || status === 'Rejected') {
         query.status = { $in: ['Rejected by Admin', 'Rejected'] };
+      } else {
+        query.status = status;
       }
     }
 
@@ -559,26 +561,61 @@ const adminGetAllRequests = async (req, res) => {
     const limitNum = parseInt(limit, 10) || 10;
     const skip = (pageNum - 1) * limitNum;
 
-    let requests = await ContactRequest.find(query)
+    let rawRequests = await ContactRequest.find(query)
       .populate('requestedBy', 'name email phone')
+      .populate('receiverUser', 'name email phone')
       .populate(
         'requestedProfile',
-        'firstName lastName profileImage mobileNumber email denomination diocese occupation city state'
+        'firstName lastName profileImage mobileNumber email denomination diocese occupation city state gender'
       )
       .populate('approvedBy', 'name email')
       .sort({ updatedAt: -1, createdAt: -1 });
+
+    // Attach sender profile details (User A's profile if available)
+    let requests = await Promise.all(
+      rawRequests.map(async (reqItem) => {
+        const itemObj = reqItem.toObject();
+        if (reqItem.requestedBy) {
+          const senderProfile = await UserProfile.findOne({
+            userId: reqItem.requestedBy._id,
+          }).select(
+            'firstName lastName profileImage mobileNumber email denomination diocese occupation city state gender'
+          );
+          if (senderProfile) {
+            itemObj.senderProfile = senderProfile;
+          }
+        }
+        return itemObj;
+      })
+    );
 
     if (search && search.trim() !== '') {
       const q = search.trim().toLowerCase();
       requests = requests.filter((reqItem) => {
         const uName = (reqItem.requestedBy?.name || '').toLowerCase();
         const uEmail = (reqItem.requestedBy?.email || '').toLowerCase();
+        const sFirst = (reqItem.senderProfile?.firstName || '').toLowerCase();
+        const sLast = (reqItem.senderProfile?.lastName || '').toLowerCase();
+        const sFull = `${sFirst} ${sLast}`;
+
         const pFirst = (reqItem.requestedProfile?.firstName || '').toLowerCase();
         const pLast = (reqItem.requestedProfile?.lastName || '').toLowerCase();
         const pFull = `${pFirst} ${pLast}`;
 
+        const rName = (reqItem.receiverUser?.name || '').toLowerCase();
+        const rEmail = (reqItem.receiverUser?.email || '').toLowerCase();
+
         return (
-          uName.includes(q) || uEmail.includes(q) || pFirst.includes(q) || pLast.includes(q) || pFull.includes(q)
+          uName.includes(q) ||
+          uEmail.includes(q) ||
+          sFirst.includes(q) ||
+          sLast.includes(q) ||
+          sFull.includes(q) ||
+          pFirst.includes(q) ||
+          pLast.includes(q) ||
+          pFull.includes(q) ||
+          rName.includes(q) ||
+          rEmail.includes(q)
         );
       });
     }
@@ -619,6 +656,13 @@ const adminApproveRequest = async (req, res) => {
       return res.status(NOT_FOUND).json({
         success: false,
         message: 'Contact request record not found.',
+      });
+    }
+
+    if (request.status === 'Pending Member Review') {
+      return res.status(BAD_REQUEST).json({
+        success: false,
+        message: 'Cannot approve request. Member (User B) has not accepted the interest request yet.',
       });
     }
 
