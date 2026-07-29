@@ -9,21 +9,35 @@ const FORBIDDEN = 403;
 const NOT_FOUND = 404;
 const INTERNAL_SERVER_ERROR = 500;
 
+// Helper: Calculate age from Date of Birth
+const calculateAge = (dob) => {
+  if (!dob) return null;
+  const birthDate = new Date(dob);
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const m = today.getMonth() - birthDate.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  return age;
+};
+
 // ─────────────────────────────────────────────
 // 1. POST /api/contact-requests/request/:profileId
-// Member sends a request to view contact details
+// User A sends a request to User B to view contact details
+// Initial status: "Pending Member Review"
 // ─────────────────────────────────────────────
 const sendContactRequest = async (req, res) => {
   try {
     const { profileId } = req.params;
 
-    // Check if target profile exists
-    let profile = await UserProfile.findById(profileId);
-    if (!profile) {
-      profile = await UserProfile.findOne({ userId: profileId });
+    // Check if target profile (User B's profile) exists
+    let targetProfile = await UserProfile.findById(profileId);
+    if (!targetProfile) {
+      targetProfile = await UserProfile.findOne({ userId: profileId });
     }
 
-    if (!profile) {
+    if (!targetProfile) {
       return res.status(NOT_FOUND).json({
         success: false,
         message: 'Target member profile not found.',
@@ -31,24 +45,32 @@ const sendContactRequest = async (req, res) => {
     }
 
     // Prevent user from requesting their own profile
-    if (profile.userId.toString() === req.user._id.toString()) {
+    if (targetProfile.userId.toString() === req.user._id.toString()) {
       return res.status(BAD_REQUEST).json({
         success: false,
         message: 'You cannot request contact details for your own profile.',
       });
     }
 
-    // Check for existing request
-    let existingRequest = await ContactRequest.findOne({
+    // Check for existing request from User A to User B
+    const existingRequest = await ContactRequest.findOne({
       requestedBy: req.user._id,
-      requestedProfile: profile._id,
+      requestedProfile: targetProfile._id,
     });
 
     if (existingRequest) {
-      if (existingRequest.status === 'Pending') {
+      if (existingRequest.status === 'Pending Member Review' || existingRequest.status === 'Pending') {
         return res.status(BAD_REQUEST).json({
           success: false,
-          message: 'Contact request is already pending admin review.',
+          message: 'Awaiting member approval before forwarding to the Admin.',
+          request: existingRequest,
+        });
+      }
+
+      if (existingRequest.status === 'Pending Admin Verification') {
+        return res.status(BAD_REQUEST).json({
+          success: false,
+          message: 'Contact request is currently pending admin verification.',
           request: existingRequest,
         });
       }
@@ -56,37 +78,37 @@ const sendContactRequest = async (req, res) => {
       if (existingRequest.status === 'Approved') {
         return res.status(BAD_REQUEST).json({
           success: false,
-          message: 'Contact request has already been approved.',
+          message: 'Contact request has already been approved by Admin.',
           request: existingRequest,
         });
       }
 
-      // If previously rejected, re-open as Pending
-      if (existingRequest.status === 'Rejected') {
-        existingRequest.status = 'Pending';
-        existingRequest.adminRemarks = '';
-        existingRequest.approvalDate = null;
-        existingRequest.approvedBy = null;
-        await existingRequest.save();
+      if (existingRequest.status === 'Rejected by Member') {
+        return res.status(FORBIDDEN).json({
+          success: false,
+          message: 'Request Rejected by Member',
+        });
+      }
 
-        return res.status(OK).json({
-          success: true,
-          message: 'Contact request resubmitted for admin review.',
-          request: existingRequest,
+      if (existingRequest.status === 'Rejected by Admin' || existingRequest.status === 'Rejected') {
+        return res.status(FORBIDDEN).json({
+          success: false,
+          message: 'Request Rejected by Admin',
         });
       }
     }
 
-    // Create new ContactRequest
+    // Create new ContactRequest with initial status 'Pending Member Review'
     const newRequest = await ContactRequest.create({
       requestedBy: req.user._id,
-      requestedProfile: profile._id,
-      status: 'Pending',
+      requestedProfile: targetProfile._id,
+      receiverUser: targetProfile.userId,
+      status: 'Pending Member Review',
     });
 
     return res.status(CREATED).json({
       success: true,
-      message: 'Contact request submitted successfully for admin review.',
+      message: 'Awaiting member approval before forwarding to the Admin.',
       request: newRequest,
     });
   } catch (error) {
@@ -99,28 +121,31 @@ const sendContactRequest = async (req, res) => {
 
 // ─────────────────────────────────────────────
 // 2. GET /api/contact-requests/status/:profileId
-// Check status of contact request for a specific profile
+// Check status of contact request for a specific target profile
 // ─────────────────────────────────────────────
 const getRequestStatus = async (req, res) => {
   try {
     const { profileId } = req.params;
 
-    let profile = await UserProfile.findById(profileId);
-    if (!profile) {
-      profile = await UserProfile.findOne({ userId: profileId });
+    let targetProfile = await UserProfile.findById(profileId);
+    if (!targetProfile) {
+      targetProfile = await UserProfile.findOne({ userId: profileId });
     }
 
-    if (!profile) {
+    if (!targetProfile) {
       return res.status(NOT_FOUND).json({
         success: false,
         message: 'Target member profile not found.',
       });
     }
 
+    // Check request where logged in user is either sender (requestedBy) or receiver (targetProfile)
     const request = await ContactRequest.findOne({
-      requestedBy: req.user._id,
-      requestedProfile: profile._id,
-    });
+      $or: [
+        { requestedBy: req.user._id, requestedProfile: targetProfile._id },
+        { requestedBy: targetProfile.userId, receiverUser: req.user._id },
+      ],
+    }).sort({ createdAt: -1 });
 
     return res.status(OK).json({
       success: true,
@@ -138,24 +163,21 @@ const getRequestStatus = async (req, res) => {
 
 // ─────────────────────────────────────────────
 // 3. GET /api/contact-requests/my-requests
-// Get all requests sent by logged in user
+// Get all requests sent by User A (User A view - excludes Accept/Reject buttons)
 // ─────────────────────────────────────────────
 const getMyContactRequests = async (req, res) => {
   try {
-    const { status } = req.query;
-
-    const query = { requestedBy: req.user._id };
-    if (status && ['Pending', 'Approved', 'Rejected'].includes(status)) {
-      query.status = status;
-    }
-
-    const requests = await ContactRequest.find(query)
+    const rawRequests = await ContactRequest.find({
+      requestedBy: req.user._id,
+    })
       .populate({
         path: 'requestedProfile',
         select:
-          'firstName lastName profileImage gender denomination diocese occupation workLocation city state email mobileNumber address churchAddress',
+          'firstName lastName profileImage gender denomination diocese occupation workLocation city state email mobileNumber address churchAddress dateOfBirth',
       })
       .sort({ createdAt: -1 });
+
+    const requests = rawRequests.filter((r) => r.requestedProfile != null);
 
     return res.status(OK).json({
       success: true,
@@ -171,29 +193,251 @@ const getMyContactRequests = async (req, res) => {
 };
 
 // ─────────────────────────────────────────────
-// 4. GET /api/contact-requests/approved-details/:profileId
-// Secure endpoint: Return private contact details ONLY if request status is Approved
+// 4. GET /api/contact-requests/incoming
+// Get all requests received by User B
+// Displays Sender Photo, Name, Age, Diocese, Occupation, Date
+// ─────────────────────────────────────────────
+const getIncomingContactRequests = async (req, res) => {
+  try {
+    const myProfile = await UserProfile.findOne({ userId: req.user._id });
+
+    const query = {
+      $or: [
+        { receiverUser: req.user._id },
+        ...(myProfile ? [{ requestedProfile: myProfile._id }] : []),
+      ],
+      requestedBy: { $ne: req.user._id },
+    };
+
+    const rawRequests = await ContactRequest.find(query)
+      .populate('requestedBy', 'name email phone')
+      .sort({ createdAt: -1 });
+
+    const requestsWithSenderProfile = await Promise.all(
+      rawRequests.map(async (requestItem) => {
+        const itemObj = requestItem.toObject();
+        if (requestItem.requestedBy) {
+          const senderProfile = await UserProfile.findOne({
+            userId: requestItem.requestedBy._id,
+          }).select(
+            'firstName lastName profileImage dateOfBirth diocese occupation city state denomination'
+          );
+
+          if (senderProfile) {
+            itemObj.senderDetails = {
+              profileId: senderProfile._id,
+              firstName: senderProfile.firstName || requestItem.requestedBy.name,
+              lastName: senderProfile.lastName || '',
+              fullName: `${senderProfile.firstName || ''} ${senderProfile.lastName || ''}`.trim() || requestItem.requestedBy.name,
+              profileImage: senderProfile.profileImage || '',
+              age: calculateAge(senderProfile.dateOfBirth),
+              diocese: senderProfile.diocese || 'Not specified',
+              occupation: senderProfile.occupation || 'Not specified',
+              city: senderProfile.city || '',
+              state: senderProfile.state || '',
+              ...(requestItem.status === 'Approved'
+                ? {
+                    phone: senderProfile.mobileNumber || requestItem.requestedBy.phone || 'Not provided',
+                    email: senderProfile.email || requestItem.requestedBy.email || 'Not provided',
+                  }
+                : {}),
+            };
+          } else {
+            itemObj.senderDetails = {
+              profileId: null,
+              firstName: requestItem.requestedBy.name,
+              lastName: '',
+              fullName: requestItem.requestedBy.name,
+              profileImage: '',
+              age: null,
+              diocese: 'Not specified',
+              occupation: 'Not specified',
+              city: '',
+              state: '',
+              ...(requestItem.status === 'Approved'
+                ? {
+                    phone: requestItem.requestedBy.phone || 'Not provided',
+                    email: requestItem.requestedBy.email || 'Not provided',
+                  }
+                : {}),
+            };
+          }
+        }
+        return itemObj;
+      })
+    );
+
+    return res.status(OK).json({
+      success: true,
+      count: requestsWithSenderProfile.length,
+      requests: requestsWithSenderProfile,
+    });
+  } catch (error) {
+    return res.status(INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// ─────────────────────────────────────────────
+// 5. PATCH /api/contact-requests/incoming/:requestId/accept
+// User B clicks Accept -> Updates status to "Pending Admin Verification"
+// ─────────────────────────────────────────────
+const memberAcceptRequest = async (req, res) => {
+  try {
+    const { requestId } = req.params;
+
+    const request = await ContactRequest.findById(requestId);
+    if (!request) {
+      return res.status(NOT_FOUND).json({
+        success: false,
+        message: 'Contact request not found.',
+      });
+    }
+
+    const myProfile = await UserProfile.findOne({ userId: req.user._id });
+    const isAuthorized =
+      (request.receiverUser && request.receiverUser.toString() === req.user._id.toString()) ||
+      (myProfile && request.requestedProfile.toString() === myProfile._id.toString());
+
+    if (!isAuthorized) {
+      return res.status(FORBIDDEN).json({
+        success: false,
+        message: 'Unauthorized. Only the request receiver can accept this request.',
+      });
+    }
+
+    if (request.status !== 'Pending Member Review' && request.status !== 'Pending') {
+      return res.status(BAD_REQUEST).json({
+        success: false,
+        message: `Request is already in '${request.status}' status.`,
+      });
+    }
+
+    request.status = 'Pending Admin Verification';
+    request.memberActionDate = new Date();
+    await request.save();
+
+    return res.status(OK).json({
+      success: true,
+      message: 'Request accepted! Forwarded to Admin for verification.',
+      request,
+    });
+  } catch (error) {
+    return res.status(INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// ─────────────────────────────────────────────
+// 6. PATCH /api/contact-requests/incoming/:requestId/reject
+// User B clicks Reject -> Updates status to "Rejected by Member"
+// ─────────────────────────────────────────────
+const memberRejectRequest = async (req, res) => {
+  try {
+    const { requestId } = req.params;
+
+    const request = await ContactRequest.findById(requestId);
+    if (!request) {
+      return res.status(NOT_FOUND).json({
+        success: false,
+        message: 'Contact request not found.',
+      });
+    }
+
+    const myProfile = await UserProfile.findOne({ userId: req.user._id });
+    const isAuthorized =
+      (request.receiverUser && request.receiverUser.toString() === req.user._id.toString()) ||
+      (myProfile && request.requestedProfile.toString() === myProfile._id.toString());
+
+    if (!isAuthorized) {
+      return res.status(FORBIDDEN).json({
+        success: false,
+        message: 'Unauthorized. Only the request receiver can reject this request.',
+      });
+    }
+
+    if (request.status !== 'Pending Member Review' && request.status !== 'Pending') {
+      return res.status(BAD_REQUEST).json({
+        success: false,
+        message: `Request is already in '${request.status}' status.`,
+      });
+    }
+
+    request.status = 'Rejected by Member';
+    request.memberActionDate = new Date();
+    await request.save();
+
+    return res.status(OK).json({
+      success: true,
+      message: 'Request rejected.',
+      request,
+    });
+  } catch (error) {
+    return res.status(INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// ─────────────────────────────────────────────
+// 7. GET /api/contact-requests/my-statuses
+// Status map for requested profiles
+// ─────────────────────────────────────────────
+const getMyContactRequestStatuses = async (req, res) => {
+  try {
+    const requests = await ContactRequest.find({ requestedBy: req.user._id })
+      .select('requestedProfile status');
+
+    const statusMap = {};
+    requests.forEach((r) => {
+      if (r.requestedProfile) {
+        statusMap[r.requestedProfile.toString()] = r.status;
+      }
+    });
+
+    return res.status(OK).json({
+      success: true,
+      statuses: statusMap,
+    });
+  } catch (error) {
+    return res.status(INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// ─────────────────────────────────────────────
+// 8. GET /api/contact-requests/approved-details/:profileId
+// Return contact details ONLY if request status is Approved (Reciprocal check)
 // ─────────────────────────────────────────────
 const getApprovedContactDetails = async (req, res) => {
   try {
     const { profileId } = req.params;
 
-    let profile = await UserProfile.findById(profileId);
-    if (!profile) {
-      profile = await UserProfile.findOne({ userId: profileId });
+    let targetProfile = await UserProfile.findById(profileId);
+    if (!targetProfile) {
+      targetProfile = await UserProfile.findOne({ userId: profileId });
     }
 
-    if (!profile) {
+    if (!targetProfile) {
       return res.status(NOT_FOUND).json({
         success: false,
         message: 'Member profile not found.',
       });
     }
 
-    // Security check: Must have an APPROVED request
+    // Security check: Must have an APPROVED request (either User A requested User B or vice versa)
     const approvedRequest = await ContactRequest.findOne({
-      requestedBy: req.user._id,
-      requestedProfile: profile._id,
+      $or: [
+        { requestedBy: req.user._id, requestedProfile: targetProfile._id },
+        { requestedBy: targetProfile.userId, receiverUser: req.user._id },
+      ],
       status: 'Approved',
     });
 
@@ -205,22 +449,21 @@ const getApprovedContactDetails = async (req, res) => {
       });
     }
 
-    // Safe payload with contact details
     const contactDetails = {
-      profileId: profile._id,
-      firstName: profile.firstName,
-      lastName: profile.lastName,
-      profileImage: profile.profileImage,
-      mobileNumber: profile.mobileNumber || 'Not provided',
-      email: profile.email || 'Not provided',
-      address: profile.address || 'Not provided',
-      churchAddress: profile.churchAddress || 'Not provided',
-      church: profile.church || 'Not provided',
-      diocese: profile.diocese || 'Not provided',
-      denomination: profile.denomination || 'Not provided',
-      occupation: profile.occupation || 'Not provided',
-      workLocation: profile.workLocation || 'Not provided',
-      nativePlace: profile.nativePlace || 'Not provided',
+      profileId: targetProfile._id,
+      firstName: targetProfile.firstName,
+      lastName: targetProfile.lastName,
+      profileImage: targetProfile.profileImage,
+      mobileNumber: targetProfile.mobileNumber || 'Not provided',
+      email: targetProfile.email || 'Not provided',
+      address: targetProfile.address || 'Not provided',
+      churchAddress: targetProfile.churchAddress || 'Not provided',
+      church: targetProfile.church || 'Not provided',
+      diocese: targetProfile.diocese || 'Not provided',
+      denomination: targetProfile.denomination || 'Not provided',
+      occupation: targetProfile.occupation || 'Not provided',
+      workLocation: targetProfile.workLocation || 'Not provided',
+      nativePlace: targetProfile.nativePlace || 'Not provided',
       approvedAt: approvedRequest.approvalDate || approvedRequest.updatedAt,
       adminRemarks: approvedRequest.adminRemarks || '',
     };
@@ -238,17 +481,29 @@ const getApprovedContactDetails = async (req, res) => {
 };
 
 // ─────────────────────────────────────────────
-// 5. GET /api/contact-requests/admin/all  (Admin Only)
-// Paginated, searchable, filterable contact requests list for Admin
+// 9. GET /api/contact-requests/admin/all  (Admin Only)
+// Admin sees ONLY requests accepted by User B (Pending Admin Verification),
+// Approved, or Rejected by Admin.
+// MUST NOT see "Pending Member Review" or "Rejected by Member".
 // ─────────────────────────────────────────────
 const adminGetAllRequests = async (req, res) => {
   try {
     const { status, search, page = 1, limit = 10 } = req.query;
 
-    const query = {};
+    const query = {
+      status: {
+        $nin: ['Pending Member Review', 'Rejected by Member'],
+      },
+    };
 
-    if (status && status !== 'All' && ['Pending', 'Approved', 'Rejected'].includes(status)) {
-      query.status = status;
+    if (status && status !== 'All') {
+      if (status === 'Pending' || status === 'Pending Admin Verification') {
+        query.status = { $in: ['Pending Admin Verification', 'Pending'] };
+      } else if (status === 'Approved') {
+        query.status = 'Approved';
+      } else if (status === 'Rejected' || status === 'Rejected by Admin') {
+        query.status = { $in: ['Rejected by Admin', 'Rejected'] };
+      }
     }
 
     const pageNum = parseInt(page, 10) || 1;
@@ -262,9 +517,8 @@ const adminGetAllRequests = async (req, res) => {
         'firstName lastName profileImage mobileNumber email denomination diocese occupation city state'
       )
       .populate('approvedBy', 'name email')
-      .sort({ createdAt: -1 });
+      .sort({ updatedAt: -1, createdAt: -1 });
 
-    // In-memory search filtering for populated user and profile names if search param provided
     if (search && search.trim() !== '') {
       const q = search.trim().toLowerCase();
       requests = requests.filter((reqItem) => {
@@ -301,7 +555,7 @@ const adminGetAllRequests = async (req, res) => {
 };
 
 // ─────────────────────────────────────────────
-// 6. PATCH /api/contact-requests/admin/:requestId/approve (Admin Only)
+// 10. PATCH /api/contact-requests/admin/:requestId/approve (Admin Only)
 // ─────────────────────────────────────────────
 const adminApproveRequest = async (req, res) => {
   try {
@@ -330,7 +584,7 @@ const adminApproveRequest = async (req, res) => {
 
     return res.status(OK).json({
       success: true,
-      message: 'Contact request approved successfully.',
+      message: 'Contact request approved successfully! Both users now have full profile access.',
       request,
     });
   } catch (error) {
@@ -342,7 +596,7 @@ const adminApproveRequest = async (req, res) => {
 };
 
 // ─────────────────────────────────────────────
-// 7. PATCH /api/contact-requests/admin/:requestId/reject (Admin Only)
+// 11. PATCH /api/contact-requests/admin/:requestId/reject (Admin Only)
 // ─────────────────────────────────────────────
 const adminRejectRequest = async (req, res) => {
   try {
@@ -358,7 +612,7 @@ const adminRejectRequest = async (req, res) => {
       });
     }
 
-    request.status = 'Rejected';
+    request.status = 'Rejected by Admin';
     request.approvedBy = req.user._id;
     request.adminRemarks = adminRemarks || 'Request rejected by administrative security team.';
 
@@ -366,7 +620,7 @@ const adminRejectRequest = async (req, res) => {
 
     return res.status(OK).json({
       success: true,
-      message: 'Contact request rejected successfully.',
+      message: 'Contact request rejected by Admin.',
       request,
     });
   } catch (error) {
@@ -381,8 +635,13 @@ module.exports = {
   sendContactRequest,
   getRequestStatus,
   getMyContactRequests,
+  getIncomingContactRequests,
+  memberAcceptRequest,
+  memberRejectRequest,
+  getMyContactRequestStatuses,
   getApprovedContactDetails,
   adminGetAllRequests,
   adminApproveRequest,
   adminRejectRequest,
 };
+

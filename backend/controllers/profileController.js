@@ -1,5 +1,6 @@
 const path = require('path');
 const UserProfile = require('../models/UserProfile');
+const ContactRequest = require('../models/ContactRequest');
 const { OK, CREATED, NOT_FOUND, BAD_REQUEST, FORBIDDEN, INTERNAL_SERVER_ERROR } = require('../constants/statusCodes');
 const { PROFILE } = require('../constants/messages');
 const { SECTION_RULES } = require('../validators/profileValidator');
@@ -848,9 +849,19 @@ const browseProfiles = async (req, res) => {
       verificationStatus: 'Verified',
     };
 
-    // EXCLUDE LOGGED-IN USER: A logged-in member must never see their own profile in member listings
+    // EXCLUDE LOGGED-IN USER & REJECTED PROFILES FOR THIS USER
     if (req.user && req.user._id) {
       filter.userId = { $ne: req.user._id };
+
+      // Fetch all profile IDs where current user's contact request was Rejected
+      const rejectedProfileIds = await ContactRequest.distinct('requestedProfile', {
+        requestedBy: req.user._id,
+        status: 'Rejected',
+      });
+
+      if (rejectedProfileIds && rejectedProfileIds.length > 0) {
+        filter._id = { $nin: rejectedProfileIds };
+      }
     }
 
     if (gender && gender !== 'All') {
@@ -1043,7 +1054,82 @@ const getPublicProfileById = async (req, res) => {
     if (!profile || profile.deleted || profile.blocked || profile.profileStatus !== 'Active' || profile.verificationStatus !== 'Verified') {
       return res.status(NOT_FOUND).json({ success: false, message: 'Eligible profile not found' });
     }
-    return res.status(OK).json({ success: true, profile: safeProfile(profile) });
+
+    // 1. If Admin or Profile Owner -> Grant Full Access
+    if (req.user && req.user._id) {
+      const isOwner = profile.userId && profile.userId._id
+        ? profile.userId._id.toString() === req.user._id.toString()
+        : profile.userId?.toString() === req.user._id.toString();
+
+      if (req.user.role === 'admin' || isOwner) {
+        return res.status(OK).json({
+          success: true,
+          accessGranted: true,
+          requestStatus: 'Approved',
+          profile: safeProfile(profile),
+        });
+      }
+
+      // 2. Check Reciprocal Contact Request Status between req.user and target profile
+      const targetUserId = profile.userId && profile.userId._id ? profile.userId._id : profile.userId;
+      const myProfile = await UserProfile.findOne({ userId: req.user._id });
+
+      const contactReq = await ContactRequest.findOne({
+        $or: [
+          { requestedBy: req.user._id, requestedProfile: profile._id },
+          { requestedBy: targetUserId, receiverUser: req.user._id },
+          ...(myProfile ? [{ requestedBy: targetUserId, requestedProfile: myProfile._id }] : []),
+        ],
+      }).sort({ createdAt: -1 });
+
+      if (contactReq && contactReq.status === 'Approved') {
+        return res.status(OK).json({
+          success: true,
+          accessGranted: true,
+          requestStatus: 'Approved',
+          profile: safeProfile(profile),
+        });
+      }
+
+      // 3. Otherwise (No Request or Pending/Rejected Request) -> Restrict Full Access
+      let restrictMessage = 'Full profile details are restricted until your contact request is approved by Admin.';
+      if (contactReq) {
+        if (contactReq.status === 'Pending Member Review' || contactReq.status === 'Pending') {
+          restrictMessage = 'Awaiting member approval before forwarding to the Admin.';
+        } else if (contactReq.status === 'Pending Admin Verification') {
+          restrictMessage = 'Awaiting Admin verification and approval.';
+        } else if (contactReq.status === 'Rejected by Member') {
+          restrictMessage = 'Request Rejected by Member';
+        } else if (contactReq.status === 'Rejected by Admin' || contactReq.status === 'Rejected') {
+          restrictMessage = 'Request Rejected by Admin';
+        }
+      }
+
+      return res.status(FORBIDDEN).json({
+        success: false,
+        accessGranted: false,
+        requestStatus: contactReq ? contactReq.status : 'None',
+        message: restrictMessage,
+        summary: {
+          _id: profile._id,
+          firstName: profile.firstName,
+          age: profile.age,
+          occupation: profile.occupation,
+          city: profile.city,
+          state: profile.state,
+          diocese: profile.diocese,
+          profileImage: profile.profileImage,
+        },
+      });
+    }
+
+    // If guest / unauthenticated -> Restrict Full Access
+    return res.status(FORBIDDEN).json({
+      success: false,
+      accessGranted: false,
+      requestStatus: 'None',
+      message: 'Authentication and approved contact request required to view full profile.',
+    });
   } catch (error) {
     return res.status(INTERNAL_SERVER_ERROR).json({ success: false, message: error.message });
   }

@@ -5659,6 +5659,40 @@ body {
   }
 }
 
+/* Ensure Right Sidebar Profile Card displays on the right side on desktop & tablet screens */
+@media (min-width: 640px) {
+  .approved-requests-grid {
+    display: grid !important;
+    grid-template-columns: 1fr 340px !important;
+    gap: 28px !important;
+    align-items: start !important;
+  }
+
+  .profile-detail-grid {
+    display: grid !important;
+    grid-template-columns: 1fr 340px !important;
+    gap: 32px !important;
+    align-items: start !important;
+  }
+
+  .beyond-matchmaking-grid {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 48px !important;
+    align-items: center !important;
+  }
+
+  .success-story-grid {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 48px !important;
+    align-items: center !important;
+    max-width: 1140px !important;
+    margin: 0 auto !important;
+  }
+}
+
+
 
 
 
