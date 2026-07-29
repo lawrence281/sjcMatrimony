@@ -59,7 +59,7 @@ export default function Footer() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             <Link to="/about" style={{ color: '#475467', textDecoration: 'none' }}>Parish Resources</Link>
             <Link to="/about" style={{ color: '#475467', textDecoration: 'none' }}>Canon Law Guide</Link>
-            <a href="/#success-stories" style={{ color: '#475467', textDecoration: 'none' }}>Success Stories</a>
+            <a href="/#bible-marriages" style={{ color: '#475467', textDecoration: 'none' }}>Bible Marriage Gallery</a>
           </div>
         </div>
 

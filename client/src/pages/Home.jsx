@@ -8,6 +8,7 @@ import {
 import api from '../services/api'
 import toast from 'react-hot-toast'
 import { useAuth } from '../context/AuthContext'
+import BibleMarriageGallery from '../components/BibleMarriageGallery'
 
 export default function Home({ scrollToSubscription }) {
   const navigate = useNavigate()
@@ -719,103 +720,9 @@ export default function Home({ scrollToSubscription }) {
 
 
       {/* ─────────────────────────────────────────────────────────────
-          5. TESTIMONIAL SECTION ("A Connection Rooted in Prayer")
+          5. BIBLE MARRIAGE GALLERY SECTION
          ───────────────────────────────────────────────────────────── */}
-      <section id="success-stories" style={{ background: '#1E2B45', color: '#FFFFFF', padding: '80px 24px' }}>
-        <div className="success-story-grid">
-          
-          {/* Left: Wedding Photo Card */}
-          <div style={{
-            position: 'relative',
-            height: '420px',
-            borderRadius: '24px',
-            overflow: 'hidden',
-            boxShadow: '0 12px 36px rgba(0,0,0,0.3)'
-          }}>
-            <img 
-              src="https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1000&q=80" 
-              alt="Claire & David Wedding" 
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-            />
-            <div style={{
-              position: 'absolute',
-              bottom: '24px',
-              left: '24px',
-              background: 'rgba(30, 43, 69, 0.85)',
-              backdropFilter: 'blur(8px)',
-              padding: '12px 20px',
-              borderRadius: '16px',
-              color: '#FFFFFF'
-            }}>
-              <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '20px', fontWeight: 700 }}>
-                Claire & David
-              </div>
-              <div style={{ fontSize: '12px', color: '#CBD5E1' }}>Married June 2023</div>
-            </div>
-          </div>
-
-          {/* Right: Quote Content */}
-          <div>
-            <div style={{ fontSize: '48px', color: '#E2B96D', fontFamily: "'Cormorant Garamond', serif", lineHeight: 1 }}>
-              99
-            </div>
-
-            <h2 style={{
-              fontFamily: "'Cormorant Garamond', serif",
-              fontSize: '36px',
-              fontWeight: 700,
-              color: '#FFFFFF',
-              margin: '0 0 20px 0'
-            }}>
-              A Connection Rooted in Prayer
-            </h2>
-
-            <p style={{
-              fontSize: '16px',
-              lineHeight: 1.8,
-              color: '#E2E8F0',
-              fontStyle: 'italic',
-              marginBottom: '32px'
-            }}>
-              "We both were skeptical about online dating, until we found Ave Maria. Knowing that everyone here shared our core Catholic values made the process so peaceful. We connected over our shared devotion to the Rosary and soon knew that God had brought us together."
-            </p>
-
-            <div style={{ display: 'flex', gap: '12px' }}>
-              <button 
-                style={{
-                  width: '40px',
-                  height: '40px',
-                  borderRadius: '50%',
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  border: '1px solid rgba(255, 255, 255, 0.3)',
-                  color: '#FFFFFF',
-                  display: 'grid',
-                  placeItems: 'center',
-                  cursor: 'pointer'
-                }}
-              >
-                <ChevronLeft size={18} />
-              </button>
-              <button 
-                style={{
-                  width: '40px',
-                  height: '40px',
-                  borderRadius: '50%',
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  border: '1px solid rgba(255, 255, 255, 0.3)',
-                  color: '#FFFFFF',
-                  display: 'grid',
-                  placeItems: 'center',
-                  cursor: 'pointer'
-                }}
-              >
-                <ChevronRight size={18} />
-              </button>
-            </div>
-          </div>
-
-        </div>
-      </section>
+      <BibleMarriageGallery />
 
 
       {/* ─────────────────────────────────────────────────────────────
