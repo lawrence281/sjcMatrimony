@@ -12,10 +12,27 @@ const contactRequestSchema = new mongoose.Schema(
       ref: 'UserProfile',
       required: true,
     },
+    receiverUser: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
     status: {
       type: String,
-      enum: ['Pending', 'Approved', 'Rejected'],
-      default: 'Pending',
+      enum: [
+        'Pending Member Review',
+        'Pending Admin Verification',
+        'Approved',
+        'Rejected by Member',
+        'Rejected by Admin',
+        'Pending',
+        'Rejected',
+      ],
+      default: 'Pending Member Review',
+    },
+    memberActionDate: {
+      type: Date,
+      default: null,
     },
     adminRemarks: {
       type: String,
@@ -37,7 +54,10 @@ const contactRequestSchema = new mongoose.Schema(
   }
 );
 
-// Compound index to allow quick queries for requestedBy & requestedProfile
+// Indexes for fast queries
 contactRequestSchema.index({ requestedBy: 1, requestedProfile: 1 });
+contactRequestSchema.index({ receiverUser: 1, status: 1 });
+contactRequestSchema.index({ status: 1 });
 
 module.exports = mongoose.model('ContactRequest', contactRequestSchema);
+

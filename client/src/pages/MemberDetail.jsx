@@ -74,8 +74,8 @@ export default function MemberDetail() {
     try {
       const res = await api.post(`/contact-requests/request/${id}`)
       if (res.data && res.data.success) {
-        toast.success(res.data.message || 'Contact request submitted for parish admin approval!')
-        setRequestStatus('Pending')
+        toast.success(res.data.message || 'Awaiting member approval before forwarding to the Admin.')
+        setRequestStatus('Pending Member Review')
         setConfirmModalOpen(false)
       }
     } catch (err) {
@@ -130,13 +130,23 @@ export default function MemberDetail() {
             Profile Access Restricted
           </h2>
           <p style={{ color: '#64748B', fontSize: '14px', lineHeight: 1.6, marginBottom: '24px' }}>
-            Full profile details, sacramental records, gallery, and contact information are private until your contact request is approved by the parish administrator.
+            Full profile details, sacramental records, gallery, and contact information are private until your contact request is approved by the member and parish administrator.
           </p>
 
-          {requestStatus === 'Pending' ? (
-            <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: '16px', padding: '14px 20px', color: '#D97706', fontSize: '13.5px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '8px', marginBottom: '24px' }}>
+          {requestStatus === 'Pending Admin Verification' || requestStatus === 'Pending Member Review' || requestStatus === 'Pending' ? (
+            <div style={{ background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: '16px', padding: '14px 20px', color: '#1D4ED8', fontSize: '13.5px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '8px', marginBottom: '24px' }}>
               <Clock size={18} />
-              <span>Contact Request Pending Admin Approval</span>
+              <span>Awaiting Admin verification and approval.</span>
+            </div>
+          ) : requestStatus === 'Rejected by Member' ? (
+            <div style={{ background: '#FEF2F2', border: '1px solid #FCA5A5', borderRadius: '16px', padding: '14px 20px', color: '#DC2626', fontSize: '13.5px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '8px', marginBottom: '24px' }}>
+              <Lock size={18} />
+              <span>Request Rejected by Member</span>
+            </div>
+          ) : requestStatus === 'Rejected by Admin' || requestStatus === 'Rejected' ? (
+            <div style={{ background: '#FEF2F2', border: '1px solid #FCA5A5', borderRadius: '16px', padding: '14px 20px', color: '#DC2626', fontSize: '13.5px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '8px', marginBottom: '24px' }}>
+              <Lock size={18} />
+              <span>Request Rejected by Admin</span>
             </div>
           ) : (
             <button
@@ -158,7 +168,7 @@ export default function MemberDetail() {
               }}
             >
               <Shield size={18} />
-              <span>{submittingRequest ? 'Submitting Request...' : 'Submit Contact Request for Admin Review'}</span>
+              <span>{submittingRequest ? 'Submitting Request...' : 'Request Contact Information'}</span>
             </button>
           )}
 

@@ -10,7 +10,7 @@ export default function ContactRequests() {
   const [requests, setRequests] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState('All') // 'All', 'Pending', 'Approved', 'Rejected'
+  const [statusFilter, setStatusFilter] = useState('Pending Admin Verification') // 'Pending Admin Verification', 'Approved', 'Rejected by Admin', 'All'
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [totalResults, setTotalResults] = useState(0)
@@ -108,17 +108,19 @@ export default function ContactRequests() {
             <CheckCircle2 size={13} /> Approved
           </span>
         )
+      case 'Rejected by Admin':
       case 'Rejected':
         return (
           <span className="badge badge-danger" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-            <XCircle size={13} /> Rejected
+            <XCircle size={13} /> Rejected by Admin
           </span>
         )
+      case 'Pending Admin Verification':
       case 'Pending':
       default:
         return (
           <span className="badge badge-warning" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-            <Clock size={13} /> Pending Review
+            <Clock size={13} /> Pending Admin Verification
           </span>
         )
     }
@@ -134,7 +136,7 @@ export default function ContactRequests() {
             Contact Requests Management
           </h1>
           <p style={{ fontSize: '14px', color: 'var(--text-muted)', margin: 0 }}>
-            Review, approve, or reject member contact information requests for RC Christian Matrimony.
+            Review, approve, or reject member contact information requests accepted by members.
           </p>
         </div>
 
@@ -154,14 +156,19 @@ export default function ContactRequests() {
         
         {/* Status Filter Tabs */}
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-          {['All', 'Pending', 'Approved', 'Rejected'].map(status => (
+          {[
+            { label: 'Pending Verification', value: 'Pending Admin Verification' },
+            { label: 'Approved', value: 'Approved' },
+            { label: 'Rejected by Admin', value: 'Rejected by Admin' },
+            { label: 'All Verified Queue', value: 'All' },
+          ].map(filterObj => (
             <button
-              key={status}
-              onClick={() => { setStatusFilter(status); setPage(1); }}
-              className={`btn btn-sm ${statusFilter === status ? 'btn-primary' : 'btn-ghost'}`}
+              key={filterObj.value}
+              onClick={() => { setStatusFilter(filterObj.value); setPage(1); }}
+              className={`btn btn-sm ${statusFilter === filterObj.value ? 'btn-primary' : 'btn-ghost'}`}
               style={{ borderRadius: '20px', padding: '6px 16px', fontSize: '13px', fontWeight: 600 }}
             >
-              {status} Requests
+              {filterObj.label}
             </button>
           ))}
         </div>

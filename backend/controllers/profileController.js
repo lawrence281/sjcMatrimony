@@ -1070,19 +1070,17 @@ const getPublicProfileById = async (req, res) => {
         });
       }
 
-      // 2. Check Contact Request Status for this user & profile
-      const contactReq = await ContactRequest.findOne({
-        requestedBy: req.user._id,
-        requestedProfile: profile._id,
-      });
+      // 2. Check Reciprocal Contact Request Status between req.user and target profile
+      const targetUserId = profile.userId && profile.userId._id ? profile.userId._id : profile.userId;
+      const myProfile = await UserProfile.findOne({ userId: req.user._id });
 
-      if (contactReq && contactReq.status === 'Rejected') {
-        return res.status(NOT_FOUND).json({
-          success: false,
-          accessGranted: false,
-          message: 'Profile unavailable or restricted.',
-        });
-      }
+      const contactReq = await ContactRequest.findOne({
+        $or: [
+          { requestedBy: req.user._id, requestedProfile: profile._id },
+          { requestedBy: targetUserId, receiverUser: req.user._id },
+          ...(myProfile ? [{ requestedBy: targetUserId, requestedProfile: myProfile._id }] : []),
+        ],
+      }).sort({ createdAt: -1 });
 
       if (contactReq && contactReq.status === 'Approved') {
         return res.status(OK).json({
@@ -1093,12 +1091,25 @@ const getPublicProfileById = async (req, res) => {
         });
       }
 
-      // 3. Otherwise (No Request or Pending Request) -> Restrict Full Access
+      // 3. Otherwise (No Request or Pending/Rejected Request) -> Restrict Full Access
+      let restrictMessage = 'Full profile details are restricted until your contact request is approved by Admin.';
+      if (contactReq) {
+        if (contactReq.status === 'Pending Member Review' || contactReq.status === 'Pending') {
+          restrictMessage = 'Awaiting member approval before forwarding to the Admin.';
+        } else if (contactReq.status === 'Pending Admin Verification') {
+          restrictMessage = 'Awaiting Admin verification and approval.';
+        } else if (contactReq.status === 'Rejected by Member') {
+          restrictMessage = 'Request Rejected by Member';
+        } else if (contactReq.status === 'Rejected by Admin' || contactReq.status === 'Rejected') {
+          restrictMessage = 'Request Rejected by Admin';
+        }
+      }
+
       return res.status(FORBIDDEN).json({
         success: false,
         accessGranted: false,
         requestStatus: contactReq ? contactReq.status : 'None',
-        message: 'Full profile details are restricted until your contact request is approved by Admin.',
+        message: restrictMessage,
         summary: {
           _id: profile._id,
           firstName: profile.firstName,
