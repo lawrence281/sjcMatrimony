@@ -968,9 +968,51 @@ const browseProfiles = async (req, res) => {
       .skip((Number(page) - 1) * Number(limit))
       .limit(Number(limit));
 
+    // Enrich profiles with contact request relationship info for req.user
+    const contactRequestsMap = {};
+    if (req.user && req.user._id && profiles.length > 0) {
+      const profileIds = profiles.map((p) => p._id);
+      const profileUserIds = profiles
+        .map((p) => (p.userId && p.userId._id ? p.userId._id : p.userId))
+        .filter(Boolean);
+      const myProfile = await UserProfile.findOne({ userId: req.user._id });
+
+      const requests = await ContactRequest.find({
+        $or: [
+          { requestedBy: req.user._id, requestedProfile: { $in: profileIds } },
+          { requestedBy: { $in: profileUserIds }, receiverUser: req.user._id },
+          ...(myProfile ? [{ requestedBy: { $in: profileUserIds }, requestedProfile: myProfile._id }] : []),
+        ],
+      });
+
+      requests.forEach((r) => {
+        if (r.requestedBy.toString() === req.user._id.toString()) {
+          contactRequestsMap[r.requestedProfile.toString()] = {
+            id: r._id,
+            status: r.status,
+            direction: 'sent',
+          };
+        } else {
+          contactRequestsMap[r.requestedBy.toString()] = {
+            id: r._id,
+            status: r.status,
+            direction: 'incoming',
+          };
+        }
+      });
+    }
+
+    const safeProfiles = profiles.map((p) => {
+      const pObj = safeProfile(p);
+      const uId = p.userId && p.userId._id ? p.userId._id.toString() : p.userId ? p.userId.toString() : null;
+      const reqInfo = contactRequestsMap[p._id.toString()] || (uId ? contactRequestsMap[uId] : null);
+      pObj.contactRequest = reqInfo || null;
+      return pObj;
+    });
+
     return res.status(OK).json({
       success: true,
-      profiles: profiles.map(safeProfile),
+      profiles: safeProfiles,
       total,
       page: Number(page),
       pages: Math.ceil(total / Number(limit)) || 1,

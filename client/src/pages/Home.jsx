@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { 
   Search, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Check, Sparkles, 
   ShieldCheck, Church, Lock, Users, Heart, Play, ArrowRight, BookOpen, 
-  MapPin, MessageSquare, Loader2, Award, UserCheck, Shield, Clock, CheckCircle2
+  MapPin, MessageSquare, Loader2, Award, UserCheck, Shield, Clock, CheckCircle2, X
 } from 'lucide-react'
 import api from '../services/api'
 import toast from 'react-hot-toast'
@@ -59,9 +59,53 @@ export default function Home({ scrollToSubscription }) {
       if (res.data && res.data.success) {
         toast.success(res.data.message || `Contact request submitted for ${member.firstName}!`)
         setRequestStatuses(prev => ({ ...prev, [memberId]: 'Pending' }))
+        setFeaturedMembers(prev => prev.map(m => m._id === memberId ? {
+          ...m,
+          contactRequest: { status: 'Pending Member Review', direction: 'sent' }
+        } : m))
       }
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to submit contact request.')
+    } finally {
+      setSubmittingId(null)
+    }
+  }
+
+  const handleAcceptContactRequest = async (e, member, requestId) => {
+    e.stopPropagation()
+    const memberId = member._id
+    setSubmittingId(memberId)
+    try {
+      const res = await api.patch(`/contact-requests/incoming/${requestId}/accept`)
+      if (res.data && res.data.success) {
+        toast.success('Request accepted! Forwarded to Admin for verification.')
+        setFeaturedMembers(prev => prev.map(m => m._id === memberId ? {
+          ...m,
+          contactRequest: { ...(m.contactRequest || {}), status: 'Pending Admin Verification', direction: 'incoming' }
+        } : m))
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to accept request.')
+    } finally {
+      setSubmittingId(null)
+    }
+  }
+
+  const handleRejectContactRequest = async (e, member, requestId) => {
+    e.stopPropagation()
+    const memberId = member._id
+    setSubmittingId(memberId)
+    try {
+      const res = await api.patch(`/contact-requests/incoming/${requestId}/reject`)
+      if (res.data && res.data.success) {
+        toast.success('Request rejected.')
+        setFeaturedMembers(prev => prev.map(m => m._id === memberId ? {
+          ...m,
+          contactRequest: { ...(m.contactRequest || {}), status: 'Rejected by Member', direction: 'incoming' }
+        } : m))
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to reject request.')
     } finally {
       setSubmittingId(null)
     }
@@ -345,7 +389,69 @@ export default function Home({ scrollToSubscription }) {
 
                 {/* Dynamic Contact Request CTA Button */}
                 {(() => {
-                  const status = requestStatuses[member._id] || 'None'
+                  const req = member.contactRequest
+                  const fallbackStatus = requestStatuses[member._id] || 'None'
+                  const status = req?.status || fallbackStatus
+                  const isIncoming = req?.direction === 'incoming'
+
+                  // CASE 1: Incoming Pending Request -> Show ACCEPT & REJECT buttons
+                  if (isIncoming && (status === 'Pending Member Review' || status === 'Pending')) {
+                    return (
+                      <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
+                        <button
+                          onClick={(e) => handleRejectContactRequest(e, member, req.id)}
+                          disabled={submittingId === member._id}
+                          style={{
+                            flex: 1,
+                            padding: '9px 6px',
+                            borderRadius: '10px',
+                            background: '#FFFFFF',
+                            color: '#DC2626',
+                            border: '1.5px solid #FCA5A5',
+                            fontSize: '12.5px',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '4px'
+                          }}
+                        >
+                          <X size={14} strokeWidth={3} />
+                          <span>Reject</span>
+                        </button>
+
+                        <button
+                          onClick={(e) => handleAcceptContactRequest(e, member, req.id)}
+                          disabled={submittingId === member._id}
+                          style={{
+                            flex: 1.2,
+                            padding: '9px 6px',
+                            borderRadius: '10px',
+                            background: '#059669',
+                            color: '#FFFFFF',
+                            border: 'none',
+                            fontSize: '12.5px',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '4px',
+                            boxShadow: '0 2px 6px rgba(5,150,105,0.25)'
+                          }}
+                        >
+                          {submittingId === member._id ? (
+                            <Loader2 size={14} className="animate-spin" />
+                          ) : (
+                            <Check size={14} strokeWidth={3} />
+                          )}
+                          <span>Accept</span>
+                        </button>
+                      </div>
+                    )
+                  }
+
                   if (status === 'Approved') {
                     return (
                       <button
@@ -375,7 +481,33 @@ export default function Home({ scrollToSubscription }) {
                     )
                   }
 
-                  if (status === 'Pending') {
+                  if (status === 'Pending Admin Verification') {
+                    return (
+                      <button
+                        disabled
+                        style={{
+                          width: '100%',
+                          padding: '10px',
+                          borderRadius: '10px',
+                          background: '#EFF6FF',
+                          border: '1px solid #BFDBFE',
+                          color: '#1D4ED8',
+                          fontSize: '12px',
+                          fontWeight: 700,
+                          cursor: 'not-allowed',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '6px'
+                        }}
+                      >
+                        <Clock size={15} color="#1D4ED8" />
+                        <span>Accepted — Pending Admin</span>
+                      </button>
+                    )
+                  }
+
+                  if (status === 'Pending Member Review' || status === 'Pending') {
                     return (
                       <button
                         disabled
@@ -396,7 +528,33 @@ export default function Home({ scrollToSubscription }) {
                         }}
                       >
                         <Clock size={15} color="#D97706" />
-                        <span>Request Pending</span>
+                        <span>Awaiting Member Review</span>
+                      </button>
+                    )
+                  }
+
+                  if (status === 'Rejected by Member') {
+                    return (
+                      <button
+                        disabled
+                        style={{
+                          width: '100%',
+                          padding: '10px',
+                          borderRadius: '10px',
+                          background: '#FEF2F2',
+                          border: '1px solid #FCA5A5',
+                          color: '#DC2626',
+                          fontSize: '12px',
+                          fontWeight: 700,
+                          cursor: 'not-allowed',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '6px'
+                        }}
+                      >
+                        <X size={15} color="#DC2626" />
+                        <span>Request Rejected</span>
                       </button>
                     )
                   }
