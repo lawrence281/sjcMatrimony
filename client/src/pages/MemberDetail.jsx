@@ -133,7 +133,12 @@ export default function MemberDetail() {
             Full profile details, sacramental records, gallery, and contact information are private until your contact request is approved by the member and parish administrator.
           </p>
 
-          {requestStatus === 'Pending Admin Verification' || requestStatus === 'Pending Member Review' || requestStatus === 'Pending' ? (
+          {requestStatus === 'Already Taken' ? (
+            <div style={{ background: '#FEF2F2', border: '1.5px solid #F87171', borderRadius: '16px', padding: '14px 20px', color: '#991B1B', fontSize: '14px', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '8px', marginBottom: '24px', boxShadow: '0 4px 12px rgba(220,38,38,0.08)' }}>
+              <Lock size={20} color="#DC2626" />
+              <span>This profile is already connected with another member (Already Taken)</span>
+            </div>
+          ) : requestStatus === 'Pending Admin Verification' || requestStatus === 'Pending Member Review' || requestStatus === 'Pending' ? (
             <div style={{ background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: '16px', padding: '14px 20px', color: '#1D4ED8', fontSize: '13.5px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '8px', marginBottom: '24px' }}>
               <Clock size={18} />
               <span>Awaiting Admin verification and approval.</span>

@@ -210,9 +210,53 @@ export default function BrowseMembers() {
       if (res.data && res.data.success) {
         toast.success(res.data.message || `Contact request submitted for ${member.firstName}!`)
         setRequestStatuses(prev => ({ ...prev, [memberId]: 'Pending' }))
+        setMembers(prev => prev.map(m => m._id === memberId ? {
+          ...m,
+          contactRequest: { status: 'Pending Member Review', direction: 'sent' }
+        } : m))
       }
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to submit contact request.')
+    } finally {
+      setConnectingId(null)
+    }
+  }
+
+  const handleAcceptContactRequest = async (e, member, requestId) => {
+    e.stopPropagation()
+    const memberId = member._id
+    setConnectingId(memberId)
+    try {
+      const res = await api.patch(`/contact-requests/incoming/${requestId}/accept`)
+      if (res.data && res.data.success) {
+        toast.success('Request accepted! Forwarded to Admin for verification.')
+        setMembers(prev => prev.map(m => m._id === memberId ? {
+          ...m,
+          contactRequest: { ...(m.contactRequest || {}), status: 'Pending Admin Verification', direction: 'incoming' }
+        } : m))
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to accept request.')
+    } finally {
+      setConnectingId(null)
+    }
+  }
+
+  const handleRejectContactRequest = async (e, member, requestId) => {
+    e.stopPropagation()
+    const memberId = member._id
+    setConnectingId(memberId)
+    try {
+      const res = await api.patch(`/contact-requests/incoming/${requestId}/reject`)
+      if (res.data && res.data.success) {
+        toast.success('Request rejected.')
+        setMembers(prev => prev.map(m => m._id === memberId ? {
+          ...m,
+          contactRequest: { ...(m.contactRequest || {}), status: 'Rejected by Member', direction: 'incoming' }
+        } : m))
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to reject request.')
     } finally {
       setConnectingId(null)
     }
@@ -761,6 +805,54 @@ export default function BrowseMembers() {
                             e.target.src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80'
                           }}
                         />
+
+                        {/* Already Taken Badge */}
+                        {(member.isTaken || member.contactRequest?.status === 'Already Taken') ? (
+                          <div style={{
+                            position: 'absolute',
+                            top: '12px',
+                            left: '12px',
+                            right: '12px',
+                            background: '#FEF2F2',
+                            border: '1.5px solid #EF4444',
+                            color: '#991B1B',
+                            padding: '6px 12px',
+                            borderRadius: '12px',
+                            fontSize: '11.5px',
+                            fontWeight: 800,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            boxShadow: '0 4px 12px rgba(239,68,68,0.2)',
+                            zIndex: 10
+                          }}>
+                            <Shield size={14} color="#DC2626" />
+                            <span>ALREADY TAKEN</span>
+                          </div>
+                        ) : member.contactRequest?.direction === 'incoming' && (member.contactRequest?.status === 'Pending Member Review' || member.contactRequest?.status === 'Pending') ? (
+                          /* Incoming Pending Request Badge */
+                          <div style={{
+                            position: 'absolute',
+                            top: '12px',
+                            left: '12px',
+                            right: '12px',
+                            background: '#FEF3C7',
+                            border: '1.5px solid #F59E0B',
+                            color: '#92400E',
+                            padding: '6px 12px',
+                            borderRadius: '12px',
+                            fontSize: '11.5px',
+                            fontWeight: 800,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
+                            zIndex: 10
+                          }}>
+                            <Clock size={14} color="#D97706" />
+                            <span>RECEIVED CONTACT REQUEST</span>
+                          </div>
+                        ) : null}
                       </div>
 
                       {/* Card Body Details */}
@@ -850,7 +942,99 @@ export default function BrowseMembers() {
 
                         {/* Dynamic Contact Request CTA Button */}
                         {(() => {
-                          const status = requestStatuses[member._id] || 'None'
+                          const req = member.contactRequest
+                          const fallbackStatus = requestStatuses[member._id] || 'None'
+                          const status = req?.status || fallbackStatus
+                          const isIncoming = req?.direction === 'incoming'
+
+                          // CASE 0: Already Taken -> Show disabled Already Taken button
+                          if (member.isTaken || status === 'Already Taken') {
+                            return (
+                              <button
+                                disabled
+                                style={{
+                                  width: '100%',
+                                  padding: '10px',
+                                  borderRadius: '12px',
+                                  background: '#FEF2F2',
+                                  border: '1.5px solid #FCA5A5',
+                                  color: '#991B1B',
+                                  fontSize: '12.5px',
+                                  fontWeight: 800,
+                                  cursor: 'not-allowed',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  gap: '6px'
+                                }}
+                              >
+                                <Shield size={15} color="#DC2626" />
+                                <span>Already Taken</span>
+                              </button>
+                            )
+                          }
+
+                          // CASE 1: Incoming Pending Request for User B -> Show ACCEPT & REJECT buttons
+                          if (isIncoming && (status === 'Pending Member Review' || status === 'Pending')) {
+                            return (
+                              <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
+                                <button
+                                  onClick={(e) => handleRejectContactRequest(e, member, req.id)}
+                                  disabled={connectingId === member._id}
+                                  style={{
+                                    flex: 1,
+                                    padding: '10px 8px',
+                                    borderRadius: '12px',
+                                    background: '#FFFFFF',
+                                    color: '#DC2626',
+                                    border: '1.5px solid #FCA5A5',
+                                    fontSize: '13px',
+                                    fontWeight: 700,
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '5px',
+                                    transition: 'all 0.2s'
+                                  }}
+                                >
+                                  <X size={15} strokeWidth={3} />
+                                  <span>Reject</span>
+                                </button>
+
+                                <button
+                                  onClick={(e) => handleAcceptContactRequest(e, member, req.id)}
+                                  disabled={connectingId === member._id}
+                                  style={{
+                                    flex: 1.2,
+                                    padding: '10px 8px',
+                                    borderRadius: '12px',
+                                    background: '#059669',
+                                    color: '#FFFFFF',
+                                    border: 'none',
+                                    fontSize: '13px',
+                                    fontWeight: 700,
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '5px',
+                                    boxShadow: '0 2px 8px rgba(5,150,105,0.25)',
+                                    transition: 'all 0.2s'
+                                  }}
+                                >
+                                  {connectingId === member._id ? (
+                                    <Loader2 size={15} className="animate-spin" />
+                                  ) : (
+                                    <Check size={15} strokeWidth={3} />
+                                  )}
+                                  <span>Accept</span>
+                                </button>
+                              </div>
+                            )
+                          }
+
+                          // CASE 2: Approved status -> View Full Profile
                           if (status === 'Approved') {
                             return (
                               <button
@@ -881,18 +1065,19 @@ export default function BrowseMembers() {
                             )
                           }
 
-                          if (status === 'Pending') {
+                          // CASE 3: Pending Admin Verification
+                          if (status === 'Pending Admin Verification') {
                             return (
                               <button
                                 disabled
                                 style={{
                                   width: '100%',
-                                  padding: '11px',
+                                  padding: '10px',
                                   borderRadius: '12px',
-                                  background: '#FFFBEB',
-                                  border: '1px solid #FDE68A',
-                                  color: '#D97706',
-                                  fontSize: '12.5px',
+                                  background: '#EFF6FF',
+                                  border: '1px solid #BFDBFE',
+                                  color: '#1D4ED8',
+                                  fontSize: '12px',
                                   fontWeight: 700,
                                   cursor: 'not-allowed',
                                   display: 'flex',
@@ -901,12 +1086,67 @@ export default function BrowseMembers() {
                                   gap: '6px'
                                 }}
                               >
-                                <Clock size={16} color="#D97706" />
-                                <span>Request Pending</span>
+                                <Clock size={15} color="#1D4ED8" />
+                                <span>Accepted — Pending Admin</span>
                               </button>
                             )
                           }
 
+                          // CASE 4: Pending Member Review (Sent by User A)
+                          if (status === 'Pending Member Review' || status === 'Pending') {
+                            return (
+                              <button
+                                disabled
+                                style={{
+                                  width: '100%',
+                                  padding: '10px',
+                                  borderRadius: '12px',
+                                  background: '#FFFBEB',
+                                  border: '1px solid #FDE68A',
+                                  color: '#D97706',
+                                  fontSize: '12px',
+                                  fontWeight: 700,
+                                  cursor: 'not-allowed',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  gap: '6px'
+                                }}
+                              >
+                                <Clock size={15} color="#D97706" />
+                                <span>Awaiting Member Review</span>
+                              </button>
+                            )
+                          }
+
+                          // CASE 5: Rejected by Member
+                          if (status === 'Rejected by Member') {
+                            return (
+                              <button
+                                disabled
+                                style={{
+                                  width: '100%',
+                                  padding: '10px',
+                                  borderRadius: '12px',
+                                  background: '#FEF2F2',
+                                  border: '1px solid #FCA5A5',
+                                  color: '#DC2626',
+                                  fontSize: '12px',
+                                  fontWeight: 700,
+                                  cursor: 'not-allowed',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  gap: '6px'
+                                }}
+                              >
+                                <X size={15} color="#DC2626" />
+                                <span>Request Rejected</span>
+                              </button>
+                            )
+                          }
+
+                          // DEFAULT: Send Contact Request CTA
                           return (
                             <button
                               onClick={(e) => handleSendContactRequest(e, member)}
