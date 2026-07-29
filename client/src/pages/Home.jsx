@@ -8,6 +8,7 @@ import {
 import api from '../services/api'
 import toast from 'react-hot-toast'
 import { useAuth } from '../context/AuthContext'
+import BibleMarriageGallery from '../components/BibleMarriageGallery'
 
 export default function Home({ scrollToSubscription }) {
   const navigate = useNavigate()
@@ -157,6 +158,28 @@ export default function Home({ scrollToSubscription }) {
       toast.error(err.response?.data?.message || 'Failed to reject request.')
     } finally {
       setSubmittingId(null)
+    }
+  }
+
+  const [homePlans, setHomePlans] = useState([])
+  const [loadingHomePlans, setLoadingHomePlans] = useState(true)
+
+  useEffect(() => {
+    fetchFeaturedMembers()
+    fetchHomePlans()
+  }, [])
+
+  const fetchHomePlans = async () => {
+    setLoadingHomePlans(true)
+    try {
+      const res = await api.get('/subscriptions?status=active&limit=3&sortBy=displayOrder&sortOrder=asc')
+      if (res.data && res.data.success) {
+        setHomePlans(res.data.subscriptions || [])
+      }
+    } catch (err) {
+      console.error('Failed to fetch home subscription plans:', err)
+    } finally {
+      setLoadingHomePlans(false)
     }
   }
 
@@ -697,103 +720,9 @@ export default function Home({ scrollToSubscription }) {
 
 
       {/* ─────────────────────────────────────────────────────────────
-          5. TESTIMONIAL SECTION ("A Connection Rooted in Prayer")
+          5. BIBLE MARRIAGE GALLERY SECTION
          ───────────────────────────────────────────────────────────── */}
-      <section id="success-stories" style={{ background: '#1E2B45', color: '#FFFFFF', padding: '80px 24px' }}>
-        <div className="success-story-grid">
-          
-          {/* Left: Wedding Photo Card */}
-          <div style={{
-            position: 'relative',
-            height: '420px',
-            borderRadius: '24px',
-            overflow: 'hidden',
-            boxShadow: '0 12px 36px rgba(0,0,0,0.3)'
-          }}>
-            <img 
-              src="https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1000&q=80" 
-              alt="Claire & David Wedding" 
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-            />
-            <div style={{
-              position: 'absolute',
-              bottom: '24px',
-              left: '24px',
-              background: 'rgba(30, 43, 69, 0.85)',
-              backdropFilter: 'blur(8px)',
-              padding: '12px 20px',
-              borderRadius: '16px',
-              color: '#FFFFFF'
-            }}>
-              <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '20px', fontWeight: 700 }}>
-                Claire & David
-              </div>
-              <div style={{ fontSize: '12px', color: '#CBD5E1' }}>Married June 2023</div>
-            </div>
-          </div>
-
-          {/* Right: Quote Content */}
-          <div>
-            <div style={{ fontSize: '48px', color: '#E2B96D', fontFamily: "'Cormorant Garamond', serif", lineHeight: 1 }}>
-              99
-            </div>
-
-            <h2 style={{
-              fontFamily: "'Cormorant Garamond', serif",
-              fontSize: '36px',
-              fontWeight: 700,
-              color: '#FFFFFF',
-              margin: '0 0 20px 0'
-            }}>
-              A Connection Rooted in Prayer
-            </h2>
-
-            <p style={{
-              fontSize: '16px',
-              lineHeight: 1.8,
-              color: '#E2E8F0',
-              fontStyle: 'italic',
-              marginBottom: '32px'
-            }}>
-              "We both were skeptical about online dating, until we found Ave Maria. Knowing that everyone here shared our core Catholic values made the process so peaceful. We connected over our shared devotion to the Rosary and soon knew that God had brought us together."
-            </p>
-
-            <div style={{ display: 'flex', gap: '12px' }}>
-              <button 
-                style={{
-                  width: '40px',
-                  height: '40px',
-                  borderRadius: '50%',
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  border: '1px solid rgba(255, 255, 255, 0.3)',
-                  color: '#FFFFFF',
-                  display: 'grid',
-                  placeItems: 'center',
-                  cursor: 'pointer'
-                }}
-              >
-                <ChevronLeft size={18} />
-              </button>
-              <button 
-                style={{
-                  width: '40px',
-                  height: '40px',
-                  borderRadius: '50%',
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  border: '1px solid rgba(255, 255, 255, 0.3)',
-                  color: '#FFFFFF',
-                  display: 'grid',
-                  placeItems: 'center',
-                  cursor: 'pointer'
-                }}
-              >
-                <ChevronRight size={18} />
-              </button>
-            </div>
-          </div>
-
-        </div>
-      </section>
+      <BibleMarriageGallery />
 
 
       {/* ─────────────────────────────────────────────────────────────
@@ -908,6 +837,199 @@ export default function Home({ scrollToSubscription }) {
         </div>
       </section>
 
+      {/* ─────────────────────────────────────────────────────────────
+          DYNAMIC MEMBERSHIP PLANS PREVIEW SECTION
+         ───────────────────────────────────────────────────────────── */}
+      <section id="subscription" style={{ padding: '80px 24px', background: '#f8faf9', borderTop: '1px solid #EAE5DC' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+          
+          <div style={{ textAlign: 'center', maxWidth: '640px', margin: '0 auto 48px auto' }}>
+            <span style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '6px 14px',
+              borderRadius: '20px',
+              background: 'rgba(197, 155, 78, 0.15)',
+              color: '#C59B4E',
+              fontWeight: 700,
+              fontSize: '11px',
+              textTransform: 'uppercase',
+              letterSpacing: '1px',
+              marginBottom: '12px'
+            }}>
+              <Sparkles size={14} /> Sacred Memberships
+            </span>
+            <h2 style={{
+              fontFamily: "'Cormorant Garamond', serif",
+              fontSize: '36px',
+              fontWeight: 700,
+              color: '#1E2B45',
+              margin: '0 0 10px 0'
+            }}>
+              Transparent Membership Plans
+            </h2>
+            <p style={{ fontSize: '14.5px', color: '#64748B', lineHeight: 1.6, margin: 0 }}>
+              Choose a plan tailored to your matrimonial journey. All plans are dynamically updated by administration.
+            </p>
+          </div>
+
+          {loadingHomePlans ? (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 350px))', justifyContent: 'center', gap: '32px' }}>
+              {[1, 2, 3].map((i) => (
+                <div key={i} style={{ background: '#FFFFFF', padding: '32px', borderRadius: '20px', border: '1px solid #EAE5DC' }}>
+                  <div style={{ height: '24px', background: '#EAE5DC', borderRadius: '6px', width: '50%', marginBottom: '16px' }}></div>
+                  <div style={{ height: '36px', background: '#EAE5DC', borderRadius: '6px', width: '75%', marginBottom: '16px' }}></div>
+                  <div style={{ height: '16px', background: '#EAE5DC', borderRadius: '6px', width: '100%' }}></div>
+                </div>
+              ))}
+            </div>
+          ) : homePlans.length === 0 ? (
+            <div style={{
+              background: '#FFFFFF',
+              border: '1px solid #EAE5DC',
+              borderRadius: '20px',
+              padding: '40px 24px',
+              maxWidth: '480px',
+              margin: '0 auto',
+              textAlign: 'center',
+              boxShadow: '0 4px 16px rgba(30, 43, 69, 0.04)'
+            }}>
+              <p style={{ fontSize: '14px', color: '#64748B', marginBottom: '16px' }}>No active membership plans available at the moment.</p>
+              <Link to="/contact" style={{
+                display: 'inline-block',
+                padding: '10px 24px',
+                borderRadius: '20px',
+                border: '1px solid #1E2B45',
+                color: '#1E2B45',
+                fontSize: '13px',
+                fontWeight: 600,
+                textDecoration: 'none'
+              }}>Contact Support</Link>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 350px))', justifyContent: 'center', gap: '32px', alignItems: 'stretch' }}>
+              {homePlans.map((plan) => (
+                <div
+                  key={plan._id}
+                  style={{
+                    background: '#FFFFFF',
+                    border: plan.isPopular ? '2px solid #C59B4E' : '1px solid #EAE5DC',
+                    borderRadius: '24px',
+                    padding: '32px 28px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    position: 'relative',
+                    boxShadow: plan.isPopular ? '0 12px 32px rgba(197, 155, 78, 0.2)' : '0 4px 16px rgba(30, 43, 69, 0.06)',
+                    transition: 'transform 0.2s, box-shadow 0.2s'
+                  }}
+                >
+                  {plan.isPopular && (
+                    <div style={{
+                      position: 'absolute',
+                      top: '-14px',
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      background: '#C59B4E',
+                      color: '#FFFFFF',
+                      padding: '4px 14px',
+                      borderRadius: '20px',
+                      fontSize: '10px',
+                      fontWeight: 800,
+                      letterSpacing: '1px',
+                      textTransform: 'uppercase',
+                      boxShadow: '0 4px 12px rgba(197, 155, 78, 0.3)'
+                    }}>
+                      MOST POPULAR
+                    </div>
+                  )}
+
+                  <div>
+                    <div style={{ fontSize: '11px', fontWeight: 800, color: '#C59B4E', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>
+                      {plan.planType} PLAN
+                    </div>
+
+                    <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '24px', fontWeight: 700, color: '#1E2B45', margin: '0 0 8px 0' }}>
+                      {plan.name}
+                    </h3>
+
+                    <p style={{ fontSize: '13px', color: '#64748B', margin: '0 0 20px 0', lineHeight: 1.5, minHeight: '38px' }}>
+                      {plan.description || 'Full parish profile access and verified search.'}
+                    </p>
+
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', paddingBottom: '16px', marginBottom: '20px', borderBottom: '1px solid #EAE5DC' }}>
+                      <span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '36px', fontWeight: 700, color: '#1E2B45' }}>
+                        {plan.price === 0 ? 'FREE' : `₹${plan.price.toLocaleString('en-IN')}`}
+                      </span>
+                      {plan.price > 0 && <span style={{ fontSize: '12px', color: '#64748B' }}>/ {plan.duration} {plan.durationUnit}</span>}
+                    </div>
+
+                    <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 24px 0', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      <li style={{ fontSize: '13px', color: '#1E2B45', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Check size={16} style={{ color: '#10b981' }} /> Contacts: <strong>{plan.maxContactRequests === -1 ? 'Unlimited' : plan.maxContactRequests}</strong>
+                      </li>
+                      <li style={{ fontSize: '13px', color: '#1E2B45', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Check size={16} style={{ color: '#10b981' }} /> Views: <strong>{plan.maxProfileViews === -1 ? 'Unlimited' : plan.maxProfileViews}</strong>
+                      </li>
+                      {plan.features?.slice(0, 2).map((f, idx) => (
+                        <li key={idx} style={{ fontSize: '13px', color: '#475467', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <Check size={16} style={{ color: '#10b981' }} /> {f}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <Link
+                    to="/subscription"
+                    style={{
+                      display: 'block',
+                      textAlign: 'center',
+                      padding: '12px 24px',
+                      borderRadius: '24px',
+                      fontSize: '13px',
+                      fontWeight: 700,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px',
+                      textDecoration: 'none',
+                      background: plan.isPopular ? '#1E2B45' : 'transparent',
+                      color: plan.isPopular ? '#FFFFFF' : '#1E2B45',
+                      border: plan.isPopular ? 'none' : '1.5px solid #1E2B45',
+                      boxShadow: plan.isPopular ? '0 4px 14px rgba(30, 43, 69, 0.2)' : 'none',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    Choose {plan.name}
+                  </Link>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div style={{ textAlign: 'center', marginTop: '40px' }}>
+            <Link
+              to="/subscription"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '14px 32px',
+                borderRadius: '24px',
+                border: '1.5px solid #1E2B45',
+                color: '#1E2B45',
+                fontSize: '14px',
+                fontWeight: 600,
+                textDecoration: 'none',
+                background: '#FFFFFF',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+              }}
+            >
+              View All Membership Plans <ArrowRight size={16} />
+            </Link>
+          </div>
+
+        </div>
+      </section>
 
       {/* ─────────────────────────────────────────────────────────────
           7. FAQ ACCORDION SECTION (Matching Image 2)

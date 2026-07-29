@@ -27,8 +27,11 @@ const getSubscriptions = async (req, res) => {
       ];
     }
 
+    // If status is specified as active/inactive, use it. Otherwise default to 'active' for non-admin queries
     if (status !== 'ALL') {
       query.status = status;
+    } else if (!req.user || req.user.role !== 'admin') {
+      query.status = 'active';
     }
 
     if (planType !== 'ALL') {
@@ -38,10 +41,62 @@ const getSubscriptions = async (req, res) => {
     const sortOptions = {};
     sortOptions[sortBy] = sortOrder;
 
-    const [subscriptions, total] = await Promise.all([
+    let [subscriptions, total] = await Promise.all([
       Subscription.find(query).sort(sortOptions).skip(skip).limit(limit),
       Subscription.countDocuments(query),
     ]);
+
+    // Auto-seed default subscription plans if database collection is empty
+    const totalCollectionDocs = await Subscription.countDocuments({});
+    if (totalCollectionDocs === 0) {
+      const defaultPlans = [
+        {
+          name: 'Free Membership',
+          planType: 'free',
+          description: 'Basic access to browse profiles and receive parish match updates.',
+          duration: 1,
+          durationUnit: 'months',
+          price: 0,
+          features: ['Browse verified profiles', 'Parish network search', 'Basic profile creation'],
+          maxContactRequests: 5,
+          maxProfileViews: 20,
+          status: 'active',
+          displayOrder: 1,
+          isPopular: false,
+        },
+        {
+          name: 'Gold Quarterly Plan',
+          planType: 'standard',
+          description: 'Our most popular plan for active members seeking mutual contact details.',
+          duration: 3,
+          durationUnit: 'months',
+          price: 999,
+          features: ['Direct phone & email access', 'Priority parish verification', 'Unlimited profile browsing', 'Highlighted profile badge'],
+          maxContactRequests: 25,
+          maxProfileViews: 100,
+          status: 'active',
+          displayOrder: 2,
+          isPopular: true,
+        },
+        {
+          name: 'VIP Sacred Family Plan',
+          planType: 'vip',
+          description: 'Unlimited access with dedicated relationship manager and chaplain consultation.',
+          duration: 1,
+          durationUnit: 'years',
+          price: 2499,
+          features: ['Unlimited contact requests', 'Unlimited profile views', 'Personal Relationship Manager', 'Priority parish letter check', 'Pre-Cana retreat guidance'],
+          maxContactRequests: -1,
+          maxProfileViews: -1,
+          status: 'active',
+          displayOrder: 3,
+          isPopular: false,
+        },
+      ];
+      await Subscription.insertMany(defaultPlans);
+      subscriptions = await Subscription.find(query).sort(sortOptions).skip(skip).limit(limit);
+      total = subscriptions.length;
+    }
 
     return res.status(OK).json({
       success: true,

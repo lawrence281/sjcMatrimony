@@ -76,7 +76,7 @@ export default function Navbar() {
           </Link>
           {user && (
             <Link to="/my-contact-requests" style={navItemStyle('/my-contact-requests')}>
-             Connect
+              Connect
             </Link>
           )}
         </div>
@@ -85,8 +85,8 @@ export default function Navbar() {
         <div className="navbar-right" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           {!user ? (
             <>
-              <Link 
-                to="/login" 
+              <Link
+                to="/login"
                 style={{
                   fontSize: '14px',
                   fontWeight: 600,
@@ -97,8 +97,8 @@ export default function Navbar() {
               >
                 Login
               </Link>
-              <Link 
-                to="/login" 
+              <Link
+                to="/login"
                 style={{
                   fontSize: '14px',
                   fontWeight: 600,
@@ -115,8 +115,8 @@ export default function Navbar() {
               </Link>
             </>
           ) : (
-            <Link 
-              to="/profile" 
+            <Link
+              to="/profile"
               title="View My Profile"
               className="navbar-profile-btn"
               style={{
@@ -132,11 +132,11 @@ export default function Navbar() {
                 transition: 'all 0.2s ease-in-out'
               }}
             >
-              <span 
+              <span
                 className="hide-on-mobile"
-                style={{ 
-                  fontSize: '13.5px', 
-                  fontWeight: 600, 
+                style={{
+                  fontSize: '13.5px',
+                  fontWeight: 600,
                   color: isActive('/profile') ? '#FFFFFF' : '#1B2535',
                   whiteSpace: 'nowrap'
                 }}
@@ -156,8 +156,8 @@ export default function Navbar() {
               </div>
             </Link>
           )}
-          
-          <button 
+
+          <button
             className="navbar-mobile-toggle"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             style={{
