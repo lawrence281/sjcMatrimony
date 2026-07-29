@@ -90,6 +90,13 @@ export default function ApprovedContactRequests() {
   }
 
   const activeIncomingCount = incomingRequests.filter(r => r.status === 'Pending Member Review' || r.status === 'Pending').length
+  const hasAlreadyAcceptedAny = incomingRequests.some(r => r.status === 'Pending Admin Verification' || r.status === 'Approved')
+
+  const currentSentReq = selectedSentRequest || sentRequests[0] || null
+  const sentReqStatus = currentSentReq?.status || 'Pending Member Review'
+  const isSentApproved = sentReqStatus === 'Approved'
+  const sentTargetMember = currentSentReq?.requestedProfile || {}
+  const sentTargetName = [sentTargetMember.firstName, sentTargetMember.lastName].filter(Boolean).join(' ') || 'Member'
 
   return (
     <div style={{ background: '#F8FAF9', minHeight: '100vh', padding: '32px 24px 80px 24px', fontFamily: "'Inter', sans-serif" }}>
@@ -267,17 +274,25 @@ export default function ApprovedContactRequests() {
                         {isPending ? (
                           <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                             <button
-                              onClick={() => handleRejectIncoming(req._id)}
-                              disabled={actionLoadingId === req._id}
+                              onClick={() => {
+                                if (hasAlreadyAcceptedAny) {
+                                  toast.error('You have already accepted another contact request.')
+                                  return
+                                }
+                                handleRejectIncoming(req._id)
+                              }}
+                              disabled={actionLoadingId === req._id || hasAlreadyAcceptedAny}
+                              title={hasAlreadyAcceptedAny ? 'You have already accepted another member request' : 'Reject Request'}
                               style={{
                                 background: '#FFFFFF',
-                                color: '#DC2626',
-                                border: '1.5px solid #FCA5A5',
+                                color: hasAlreadyAcceptedAny ? '#94A3B8' : '#DC2626',
+                                border: `1.5px solid ${hasAlreadyAcceptedAny ? '#E2E8F0' : '#FCA5A5'}`,
                                 borderRadius: '14px',
                                 padding: '10px 20px',
                                 fontSize: '14px',
                                 fontWeight: 600,
-                                cursor: 'pointer',
+                                cursor: hasAlreadyAcceptedAny ? 'not-allowed' : 'pointer',
+                                opacity: hasAlreadyAcceptedAny ? 0.6 : 1,
                                 transition: 'all 0.2s ease'
                               }}
                             >
@@ -285,21 +300,29 @@ export default function ApprovedContactRequests() {
                             </button>
 
                             <button
-                              onClick={() => handleAcceptIncoming(req._id)}
-                              disabled={actionLoadingId === req._id}
+                              onClick={() => {
+                                if (hasAlreadyAcceptedAny) {
+                                  toast.error('You have already accepted another contact request.')
+                                  return
+                                }
+                                handleAcceptIncoming(req._id)
+                              }}
+                              disabled={actionLoadingId === req._id || hasAlreadyAcceptedAny}
+                              title={hasAlreadyAcceptedAny ? 'You have already accepted another member request' : 'Accept Request'}
                               style={{
-                                background: '#059669',
+                                background: hasAlreadyAcceptedAny ? '#94A3B8' : '#059669',
                                 color: '#FFFFFF',
                                 border: 'none',
                                 borderRadius: '14px',
                                 padding: '10px 24px',
                                 fontSize: '14px',
                                 fontWeight: 600,
-                                cursor: 'pointer',
+                                cursor: hasAlreadyAcceptedAny ? 'not-allowed' : 'pointer',
                                 display: 'flex',
                                 alignItems: 'center',
                                 gap: '8px',
-                                boxShadow: '0 2px 8px rgba(5, 150, 105, 0.25)',
+                                boxShadow: hasAlreadyAcceptedAny ? 'none' : '0 2px 8px rgba(5, 150, 105, 0.25)',
+                                opacity: hasAlreadyAcceptedAny ? 0.75 : 1,
                                 transition: 'all 0.2s ease'
                               }}
                             >
@@ -308,7 +331,7 @@ export default function ApprovedContactRequests() {
                               ) : (
                                 <Check size={16} strokeWidth={3} />
                               )}
-                              <span>Accept Request</span>
+                              <span>{hasAlreadyAcceptedAny ? 'Already Accepted Another' : 'Accept Request'}</span>
                             </button>
                           </div>
                         ) : req.status === 'Approved' ? (
@@ -434,210 +457,202 @@ export default function ApprovedContactRequests() {
                   </div>
                 )}
 
-                {(() => {
-                  const currentReq = selectedSentRequest || sentRequests[0]
-                  const reqStatus = currentReq.status || 'Pending Member Review'
-                  const isApproved = reqStatus === 'Approved'
-                  const targetMember = currentReq.requestedProfile || {}
-                  const targetName = [targetMember.firstName, targetMember.lastName].filter(Boolean).join(' ') || 'Member'
-
-                  return (
-                    <div>
-                      {/* Top Banner */}
+                {currentSentReq && (
+                  <div>
+                    {/* Top Banner */}
+                    <div style={{
+                      background: isSentApproved ? '#ECFDF5' : sentReqStatus === 'Rejected by Member' || sentReqStatus === 'Rejected by Admin' ? '#FEF2F2' : '#FFF8EB',
+                      border: `1px solid ${isSentApproved ? '#A7F3D0' : sentReqStatus === 'Rejected by Member' || sentReqStatus === 'Rejected by Admin' ? '#FCA5A5' : '#FDE68A'}`,
+                      borderRadius: '20px',
+                      padding: '20px 24px',
+                      marginBottom: '28px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '16px'
+                    }}>
                       <div style={{
-                        background: isApproved ? '#ECFDF5' : reqStatus === 'Rejected by Member' || reqStatus === 'Rejected by Admin' ? '#FEF2F2' : '#FFF8EB',
-                        border: `1px solid ${isApproved ? '#A7F3D0' : reqStatus === 'Rejected by Member' || reqStatus === 'Rejected by Admin' ? '#FCA5A5' : '#FDE68A'}`,
-                        borderRadius: '20px',
-                        padding: '20px 24px',
-                        marginBottom: '28px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '16px'
+                        width: '46px',
+                        height: '46px',
+                        borderRadius: '50%',
+                        background: isSentApproved ? '#D1FAE5' : sentReqStatus === 'Rejected by Member' || sentReqStatus === 'Rejected by Admin' ? '#FEE2E2' : '#FEEBC8',
+                        display: 'grid',
+                        placeItems: 'center',
+                        flexShrink: 0
                       }}>
-                        <div style={{
-                          width: '46px',
-                          height: '46px',
-                          borderRadius: '50%',
-                          background: isApproved ? '#D1FAE5' : reqStatus === 'Rejected by Member' || reqStatus === 'Rejected by Admin' ? '#FEE2E2' : '#FEEBC8',
-                          display: 'grid',
-                          placeItems: 'center',
-                          flexShrink: 0
-                        }}>
-                          <FileText size={22} color={isApproved ? '#059669' : reqStatus === 'Rejected by Member' || reqStatus === 'Rejected by Admin' ? '#DC2626' : '#B45309'} />
-                        </div>
-                        <div>
-                          <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '24px', fontWeight: 700, color: '#1E2B45', margin: '0 0 2px 0' }}>
-                            Request Status: {reqStatus}
-                          </h2>
-                          <p style={{ fontSize: '13.5px', color: '#475467', margin: 0 }}>
-                            {isApproved && 'Your contact request has been approved! Full profile & contact details unlocked below.'}
-                            {(reqStatus === 'Pending Member Review' || reqStatus === 'Pending') && 'Awaiting member approval before forwarding to the Admin.'}
-                            {reqStatus === 'Pending Admin Verification' && 'Member has accepted your request! Our administrative team is reviewing for final approval.'}
-                            {reqStatus === 'Rejected by Member' && 'Request Rejected by Member. Workflow ended for this request.'}
-                            {reqStatus === 'Rejected by Admin' && 'Request Rejected by Admin. Contact details remain restricted.'}
-                          </p>
-                        </div>
+                        <FileText size={22} color={isSentApproved ? '#059669' : sentReqStatus === 'Rejected by Member' || sentReqStatus === 'Rejected by Admin' ? '#DC2626' : '#B45309'} />
                       </div>
-
-                      {/* Main Grid */}
-                      <div className="approved-requests-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: '28px' }}>
-                        
-                        {/* LEFT: Journey & Contact Info */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
-                          
-                          {/* 3 Step Journey */}
-                          <div style={{ background: '#FFFFFF', border: '1px solid #EAE5DC', borderRadius: '24px', padding: '32px' }}>
-                            <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '26px', fontWeight: 700, color: '#1E2B45', margin: '0 0 32px 0' }}>
-                              Request Journey
-                            </h3>
-
-                            <div style={{ position: 'relative', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
-                              {/* Line */}
-                              <div style={{ position: 'absolute', top: '20px', left: '16.66%', right: '16.66%', height: '3px', zIndex: 1, display: 'flex' }}>
-                                <div style={{ flex: 1, background: (reqStatus !== 'Pending Member Review' && reqStatus !== 'Pending') ? '#1E2B45' : '#E2E8F0' }} />
-                                <div style={{ flex: 1, background: isApproved ? '#1E2B45' : '#E2E8F0' }} />
-                              </div>
-
-                              {/* Step 1 */}
-                              <div style={{ textAlign: 'center', zIndex: 2 }}>
-                                <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#1E2B45', color: '#FFFFFF', display: 'grid', placeItems: 'center', margin: '0 auto 12px auto' }}>
-                                  <Check size={18} strokeWidth={3} />
-                                </div>
-                                <span style={{ fontSize: '11px', color: '#1E2B45', display: 'block', fontWeight: 700, textTransform: 'uppercase', marginBottom: '2px' }}>Step 1</span>
-                                <h4 style={{ fontSize: '14px', fontWeight: 700, color: '#1E2B45', margin: '0 0 2px 0' }}>Request Sent</h4>
-                                <p style={{ fontSize: '12px', color: '#64748B', margin: 0 }}>
-                                  {new Date(currentReq.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                                </p>
-                              </div>
-
-                              {/* Step 2 */}
-                              <div style={{ textAlign: 'center', zIndex: 2 }}>
-                                <div style={{
-                                  width: '40px',
-                                  height: '40px',
-                                  borderRadius: '50%',
-                                  background: (reqStatus === 'Pending Member Review' || reqStatus === 'Pending') ? '#FFFBEB' : reqStatus === 'Rejected by Member' ? '#FEF2F2' : '#1E2B45',
-                                  color: (reqStatus === 'Pending Member Review' || reqStatus === 'Pending') ? '#D97706' : reqStatus === 'Rejected by Member' ? '#DC2626' : '#FFFFFF',
-                                  border: (reqStatus === 'Pending Member Review' || reqStatus === 'Pending') ? '2px solid #FDE68A' : reqStatus === 'Rejected by Member' ? '2px solid #FCA5A5' : 'none',
-                                  display: 'grid',
-                                  placeItems: 'center',
-                                  margin: '0 auto 12px auto'
-                                }}>
-                                  {reqStatus === 'Rejected by Member' ? <X size={18} strokeWidth={3} /> : (reqStatus === 'Pending Member Review' || reqStatus === 'Pending') ? <Clock size={18} /> : <Check size={18} strokeWidth={3} />}
-                                </div>
-                                <span style={{ fontSize: '11px', color: '#1E2B45', display: 'block', fontWeight: 700, textTransform: 'uppercase', marginBottom: '2px' }}>Step 2</span>
-                                <h4 style={{ fontSize: '14px', fontWeight: 700, color: '#1E2B45', margin: '0 0 2px 0' }}>Member Review</h4>
-                                <p style={{ fontSize: '12px', color: reqStatus === 'Rejected by Member' ? '#DC2626' : '#64748B', margin: 0, fontStyle: 'italic' }}>
-                                  {(reqStatus === 'Pending Member Review' || reqStatus === 'Pending') ? 'Awaiting Approval' : reqStatus === 'Rejected by Member' ? 'Rejected' : 'Accepted'}
-                                </p>
-                              </div>
-
-                              {/* Step 3 */}
-                              <div style={{ textAlign: 'center', zIndex: 2 }}>
-                                <div style={{
-                                  width: '40px',
-                                  height: '40px',
-                                  borderRadius: '50%',
-                                  background: isApproved ? '#1E2B45' : reqStatus === 'Rejected by Admin' ? '#FEF2F2' : '#EAF0FA',
-                                  color: isApproved ? '#FFFFFF' : reqStatus === 'Rejected by Admin' ? '#DC2626' : '#94A3B8',
-                                  border: isApproved ? 'none' : reqStatus === 'Rejected by Admin' ? '2px solid #FCA5A5' : '1px solid #CBD5E1',
-                                  display: 'grid',
-                                  placeItems: 'center',
-                                  margin: '0 auto 12px auto'
-                                }}>
-                                  {isApproved ? <Check size={18} strokeWidth={3} /> : reqStatus === 'Rejected by Admin' ? <X size={18} strokeWidth={3} /> : <Lock size={16} color="#94A3B8" />}
-                                </div>
-                                <span style={{ fontSize: '11px', color: isApproved ? '#1E2B45' : '#94A3B8', display: 'block', fontWeight: 700, textTransform: 'uppercase', marginBottom: '2px' }}>Step 3</span>
-                                <h4 style={{ fontSize: '14px', fontWeight: 700, color: isApproved ? '#1E2B45' : '#64748B', margin: '0 0 2px 0' }}>Admin Approval</h4>
-                                <p style={{ fontSize: '12px', color: reqStatus === 'Rejected by Admin' ? '#DC2626' : '#94A3B8', margin: 0, fontStyle: 'italic' }}>
-                                  {isApproved ? 'Unlocked Access' : reqStatus === 'Rejected by Admin' ? 'Rejected' : 'Pending'}
-                                </p>
-                              </div>
-
-                            </div>
-                          </div>
-
-                          {/* Contact Info Box */}
-                          <div style={{ background: '#FFFFFF', border: '1px solid #EAE5DC', borderRadius: '24px', padding: '32px' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                              <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '26px', fontWeight: 700, color: '#1E2B45', margin: 0 }}>
-                                Contact Information
-                              </h3>
-                              <span style={{ background: '#FFFFFF', color: '#64748B', border: '1px solid #CBD5E1', fontSize: '11px', fontWeight: 800, padding: '4px 14px', borderRadius: '14px' }}>
-                                {isApproved ? 'UNLOCKED' : 'LOCKED'}
-                              </span>
-                            </div>
-
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', filter: isApproved ? 'none' : 'blur(5px)', opacity: isApproved ? 1 : 0.4 }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '14px', background: '#F8FAF9', padding: '14px 18px', borderRadius: '14px' }}>
-                                <Phone size={20} color="#1E2B45" />
-                                <div>
-                                  <p style={{ fontSize: '11px', color: '#64748B', margin: '0 0 2px 0', textTransform: 'uppercase', fontWeight: 700 }}>Phone Number</p>
-                                  <p style={{ fontSize: '15px', fontWeight: 700, color: '#1E2B45', margin: 0 }}>{targetMember.mobileNumber || '+91 98765 43210'}</p>
-                                </div>
-                              </div>
-
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '14px', background: '#F8FAF9', padding: '14px 18px', borderRadius: '14px' }}>
-                                <Mail size={20} color="#1E2B45" />
-                                <div>
-                                  <p style={{ fontSize: '11px', color: '#64748B', margin: '0 0 2px 0', textTransform: 'uppercase', fontWeight: 700 }}>Email Address</p>
-                                  <p style={{ fontSize: '15px', fontWeight: 700, color: '#1E2B45', margin: 0 }}>{targetMember.email || 'member@example.com'}</p>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-
-                        </div>
-
-                        {/* RIGHT: Target Profile Summary Card */}
-                        <div>
-                          <div style={{ background: '#FFFFFF', border: '1px solid #EAE5DC', borderRadius: '24px', padding: '28px', textAlign: 'center', position: 'sticky', top: '96px' }}>
-                            <div style={{ width: '120px', height: '120px', borderRadius: '50%', overflow: 'hidden', margin: '0 auto 16px auto', border: '3px solid #1E2B45', boxShadow: '0 4px 16px rgba(0,0,0,0.08)' }}>
-                              {targetMember.profileImage ? (
-                                <img src={targetMember.profileImage} alt={targetName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                              ) : (
-                                <div style={{ width: '100%', height: '100%', background: '#F1F5F9', display: 'grid', placeItems: 'center' }}>
-                                  <User size={48} color="#94A3B8" />
-                                </div>
-                              )}
-                            </div>
-
-                            <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '24px', fontWeight: 700, color: '#1E2B45', margin: '0 0 4px 0' }}>
-                              {targetName}
-                            </h3>
-                            {targetMember.age && (
-                              <p style={{ fontSize: '13px', color: '#64748B', margin: '0 0 16px 0', fontWeight: 600 }}>
-                                {targetMember.age} years old • {targetMember.city || 'Location'}
-                              </p>
-                            )}
-
-                            {targetMember._id && (
-                              <Link
-                                to={`/members/${targetMember._id}`}
-                                style={{
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '8px',
-                                  background: '#1E2B45',
-                                  color: '#FFFFFF',
-                                  padding: '10px 20px',
-                                  borderRadius: '12px',
-                                  textDecoration: 'none',
-                                  fontSize: '13.5px',
-                                  fontWeight: 600
-                                }}
-                              >
-                                <span>View Full Profile</span>
-                                <ArrowRight size={16} />
-                              </Link>
-                            )}
-                          </div>
-                        </div>
-
+                      <div>
+                        <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '24px', fontWeight: 700, color: '#1E2B45', margin: '0 0 2px 0' }}>
+                          Request Status: {sentReqStatus}
+                        </h2>
+                        <p style={{ fontSize: '13.5px', color: '#475467', margin: 0 }}>
+                          {isSentApproved && 'Your contact request has been approved! Full profile & contact details unlocked below.'}
+                          {(sentReqStatus === 'Pending Member Review' || sentReqStatus === 'Pending') && 'Awaiting member approval before forwarding to the Admin.'}
+                          {sentReqStatus === 'Pending Admin Verification' && 'Member has accepted your request! Our administrative team is reviewing for final approval.'}
+                          {sentReqStatus === 'Rejected by Member' && 'Request Rejected by Member. Workflow ended for this request.'}
+                          {sentReqStatus === 'Rejected by Admin' && 'Request Rejected by Admin. Contact details remain restricted.'}
+                        </p>
                       </div>
                     </div>
-                  )
-                })()}
+
+                    {/* Main Grid */}
+                    <div className="approved-requests-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: '28px' }}>
+                      
+                      {/* LEFT: Journey & Contact Info */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
+                        
+                        {/* 3 Step Journey */}
+                        <div style={{ background: '#FFFFFF', border: '1px solid #EAE5DC', borderRadius: '24px', padding: '32px' }}>
+                          <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '26px', fontWeight: 700, color: '#1E2B45', margin: '0 0 32px 0' }}>
+                            Request Journey
+                          </h3>
+
+                          <div style={{ position: 'relative', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
+                            {/* Line */}
+                            <div style={{ position: 'absolute', top: '20px', left: '16.66%', right: '16.66%', height: '3px', zIndex: 1, display: 'flex' }}>
+                              <div style={{ flex: 1, background: (sentReqStatus !== 'Pending Member Review' && sentReqStatus !== 'Pending') ? '#1E2B45' : '#E2E8F0' }} />
+                              <div style={{ flex: 1, background: isSentApproved ? '#1E2B45' : '#E2E8F0' }} />
+                            </div>
+
+                            {/* Step 1 */}
+                            <div style={{ textAlign: 'center', zIndex: 2 }}>
+                              <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#1E2B45', color: '#FFFFFF', display: 'grid', placeItems: 'center', margin: '0 auto 12px auto' }}>
+                                <Check size={18} strokeWidth={3} />
+                              </div>
+                              <span style={{ fontSize: '11px', color: '#1E2B45', display: 'block', fontWeight: 700, textTransform: 'uppercase', marginBottom: '2px' }}>Step 1</span>
+                              <h4 style={{ fontSize: '14px', fontWeight: 700, color: '#1E2B45', margin: '0 0 2px 0' }}>Request Sent</h4>
+                              <p style={{ fontSize: '12px', color: '#64748B', margin: 0 }}>
+                                {new Date(currentSentReq.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                              </p>
+                            </div>
+
+                            {/* Step 2 */}
+                            <div style={{ textAlign: 'center', zIndex: 2 }}>
+                              <div style={{
+                                width: '40px',
+                                height: '40px',
+                                borderRadius: '50%',
+                                background: (sentReqStatus === 'Pending Member Review' || sentReqStatus === 'Pending') ? '#FFFBEB' : sentReqStatus === 'Rejected by Member' ? '#FEF2F2' : '#1E2B45',
+                                color: (sentReqStatus === 'Pending Member Review' || sentReqStatus === 'Pending') ? '#D97706' : sentReqStatus === 'Rejected by Member' ? '#DC2626' : '#FFFFFF',
+                                border: (sentReqStatus === 'Pending Member Review' || sentReqStatus === 'Pending') ? '2px solid #FDE68A' : sentReqStatus === 'Rejected by Member' ? '2px solid #FCA5A5' : 'none',
+                                display: 'grid',
+                                placeItems: 'center',
+                                margin: '0 auto 12px auto'
+                              }}>
+                                {sentReqStatus === 'Rejected by Member' ? <X size={18} strokeWidth={3} /> : (sentReqStatus === 'Pending Member Review' || sentReqStatus === 'Pending') ? <Clock size={18} /> : <Check size={18} strokeWidth={3} />}
+                              </div>
+                              <span style={{ fontSize: '11px', color: '#1E2B45', display: 'block', fontWeight: 700, textTransform: 'uppercase', marginBottom: '2px' }}>Step 2</span>
+                              <h4 style={{ fontSize: '14px', fontWeight: 700, color: '#1E2B45', margin: '0 0 2px 0' }}>Member Review</h4>
+                              <p style={{ fontSize: '12px', color: sentReqStatus === 'Rejected by Member' ? '#DC2626' : '#64748B', margin: 0, fontStyle: 'italic' }}>
+                                {(sentReqStatus === 'Pending Member Review' || sentReqStatus === 'Pending') ? 'Awaiting Approval' : sentReqStatus === 'Rejected by Member' ? 'Rejected' : 'Accepted'}
+                              </p>
+                            </div>
+
+                            {/* Step 3 */}
+                            <div style={{ textAlign: 'center', zIndex: 2 }}>
+                              <div style={{
+                                width: '40px',
+                                height: '40px',
+                                borderRadius: '50%',
+                                background: isSentApproved ? '#1E2B45' : sentReqStatus === 'Rejected by Admin' ? '#FEF2F2' : '#EAF0FA',
+                                color: isSentApproved ? '#FFFFFF' : sentReqStatus === 'Rejected by Admin' ? '#DC2626' : '#94A3B8',
+                                border: isSentApproved ? 'none' : sentReqStatus === 'Rejected by Admin' ? '2px solid #FCA5A5' : '1px solid #CBD5E1',
+                                display: 'grid',
+                                placeItems: 'center',
+                                margin: '0 auto 12px auto'
+                              }}>
+                                {isSentApproved ? <Check size={18} strokeWidth={3} /> : sentReqStatus === 'Rejected by Admin' ? <X size={18} strokeWidth={3} /> : <Lock size={16} color="#94A3B8" />}
+                              </div>
+                              <span style={{ fontSize: '11px', color: isSentApproved ? '#1E2B45' : '#94A3B8', display: 'block', fontWeight: 700, textTransform: 'uppercase', marginBottom: '2px' }}>Step 3</span>
+                              <h4 style={{ fontSize: '14px', fontWeight: 700, color: isSentApproved ? '#1E2B45' : '#64748B', margin: '0 0 2px 0' }}>Admin Approval</h4>
+                              <p style={{ fontSize: '12px', color: sentReqStatus === 'Rejected by Admin' ? '#DC2626' : '#94A3B8', margin: 0, fontStyle: 'italic' }}>
+                                {isSentApproved ? 'Unlocked Access' : sentReqStatus === 'Rejected by Admin' ? 'Rejected' : 'Pending'}
+                              </p>
+                            </div>
+
+                          </div>
+                        </div>
+
+                        {/* Contact Info Box */}
+                        <div style={{ background: '#FFFFFF', border: '1px solid #EAE5DC', borderRadius: '24px', padding: '32px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                            <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '26px', fontWeight: 700, color: '#1E2B45', margin: 0 }}>
+                              Contact Information
+                            </h3>
+                            <span style={{ background: '#FFFFFF', color: '#64748B', border: '1px solid #CBD5E1', fontSize: '11px', fontWeight: 800, padding: '4px 14px', borderRadius: '14px' }}>
+                              {isSentApproved ? 'UNLOCKED' : 'LOCKED'}
+                            </span>
+                          </div>
+
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', filter: isSentApproved ? 'none' : 'blur(5px)', opacity: isSentApproved ? 1 : 0.4 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', background: '#F8FAF9', padding: '14px 18px', borderRadius: '14px' }}>
+                              <Phone size={20} color="#1E2B45" />
+                              <div>
+                                <p style={{ fontSize: '11px', color: '#64748B', margin: '0 0 2px 0', textTransform: 'uppercase', fontWeight: 700 }}>Phone Number</p>
+                                <p style={{ fontSize: '15px', fontWeight: 700, color: '#1E2B45', margin: 0 }}>{sentTargetMember.mobileNumber || '+91 98765 43210'}</p>
+                              </div>
+                            </div>
+
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', background: '#F8FAF9', padding: '14px 18px', borderRadius: '14px' }}>
+                              <Mail size={20} color="#1E2B45" />
+                              <div>
+                                <p style={{ fontSize: '11px', color: '#64748B', margin: '0 0 2px 0', textTransform: 'uppercase', fontWeight: 700 }}>Email Address</p>
+                                <p style={{ fontSize: '15px', fontWeight: 700, color: '#1E2B45', margin: 0 }}>{sentTargetMember.email || 'member@example.com'}</p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                      </div>
+
+                      {/* RIGHT: Target Profile Summary Card */}
+                      <div>
+                        <div style={{ background: '#FFFFFF', border: '1px solid #EAE5DC', borderRadius: '24px', padding: '28px', textAlign: 'center', position: 'sticky', top: '96px' }}>
+                          <div style={{ width: '120px', height: '120px', borderRadius: '50%', overflow: 'hidden', margin: '0 auto 16px auto', border: '3px solid #1E2B45', boxShadow: '0 4px 16px rgba(0,0,0,0.08)' }}>
+                            {sentTargetMember.profileImage ? (
+                              <img src={sentTargetMember.profileImage} alt={sentTargetName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            ) : (
+                              <div style={{ width: '100%', height: '100%', background: '#F1F5F9', display: 'grid', placeItems: 'center' }}>
+                                <User size={48} color="#94A3B8" />
+                              </div>
+                            )}
+                          </div>
+
+                          <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '24px', fontWeight: 700, color: '#1E2B45', margin: '0 0 4px 0' }}>
+                            {sentTargetName}
+                          </h3>
+                          {sentTargetMember.age && (
+                            <p style={{ fontSize: '13px', color: '#64748B', margin: '0 0 16px 0', fontWeight: 600 }}>
+                              {sentTargetMember.age} years old • {sentTargetMember.city || 'Location'}
+                            </p>
+                          )}
+
+                          {sentTargetMember._id && (
+                            <Link
+                              to={`/members/${sentTargetMember._id}`}
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                background: '#1E2B45',
+                                color: '#FFFFFF',
+                                padding: '10px 20px',
+                                borderRadius: '12px',
+                                textDecoration: 'none',
+                                fontSize: '13.5px',
+                                fontWeight: 600
+                              }}
+                            >
+                              <span>View Full Profile</span>
+                              <ArrowRight size={16} />
+                            </Link>
+                          )}
+                        </div>
+                      </div>
+
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

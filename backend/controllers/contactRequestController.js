@@ -364,6 +364,25 @@ const memberAcceptRequest = async (req, res) => {
       });
     }
 
+    // Check if User B has ALREADY accepted another request or has an approved request
+    const existingActiveConnection = await ContactRequest.findOne({
+      _id: { $ne: request._id },
+      status: { $in: ['Pending Admin Verification', 'Approved', 'Pending'] },
+      $or: [
+        { receiverUser: req.user._id },
+        { requestedBy: req.user._id },
+        ...(myProfile ? [{ requestedProfile: myProfile._id }] : []),
+      ],
+    });
+
+    if (existingActiveConnection) {
+      return res.status(BAD_REQUEST).json({
+        success: false,
+        isTaken: true,
+        message: 'You have already accepted another contact request or are already connected with a member.',
+      });
+    }
+
     request.status = 'Pending Admin Verification';
     request.memberActionDate = new Date();
     await request.save();
@@ -413,6 +432,25 @@ const memberRejectRequest = async (req, res) => {
       return res.status(BAD_REQUEST).json({
         success: false,
         message: `Request is already in '${request.status}' status.`,
+      });
+    }
+
+    // Check if User B has ALREADY accepted another request or has an approved request
+    const existingActiveConnection = await ContactRequest.findOne({
+      _id: { $ne: request._id },
+      status: { $in: ['Pending Admin Verification', 'Approved', 'Pending'] },
+      $or: [
+        { receiverUser: req.user._id },
+        { requestedBy: req.user._id },
+        ...(myProfile ? [{ requestedProfile: myProfile._id }] : []),
+      ],
+    });
+
+    if (existingActiveConnection) {
+      return res.status(BAD_REQUEST).json({
+        success: false,
+        isTaken: true,
+        message: 'You have already accepted another contact request.',
       });
     }
 
