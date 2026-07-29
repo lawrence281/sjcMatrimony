@@ -23,6 +23,8 @@ import ApprovedContactRequests from './pages/ApprovedContactRequests'
 import { LanguageProvider } from './context/LanguageContext'
 import './index.css'
 
+import Membership from './pages/Membership'
+
 function ScrollToTopOnRouteChange() {
   const { pathname } = useLocation()
 
@@ -82,7 +84,7 @@ export default function App() {
               <Route path="/terms" element={<TermsOfService />} />
               <Route path="/safety" element={<PrivacyPolicy />} />
               <Route path="/about" element={<PrivacyPolicy />} />
-              <Route path="/subscription" element={<Home scrollToSubscription />} />
+              <Route path="/subscription" element={<Membership />} />
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="/profile/edit" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
               <Route path="/profile/preferences" element={<ProtectedRoute><PartnerPreference /></ProtectedRoute>} />
