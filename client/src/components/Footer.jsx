@@ -9,7 +9,7 @@ export default function Footer() {
   const handleNewsletterSubmit = (e) => {
     e.preventDefault()
     if (email) {
-      toast.success('Thank you for subscribing to Ave Maria Matrimony updates!')
+      toast.success('Thank you for subscribing to SJC Matrimony updates!')
       setEmail('')
     }
   }
@@ -43,7 +43,7 @@ export default function Footer() {
               color: '#1E2B45',
               marginBottom: '12px'
             }}>
-              Ave Maria Matrimony
+              SJC Matrimony
             </div>
           </Link>
           <p style={{ lineHeight: 1.6, maxWidth: '300px', margin: '0 0 16px 0', color: '#475467', fontSize: '13px' }}>
@@ -135,7 +135,7 @@ export default function Footer() {
         fontSize: '12px',
         color: '#64748B'
       }}>
-        © {new Date().getFullYear()} Ave Maria Matrimony. Sacredly Committed to Lifelong Unions.
+        © {new Date().getFullYear()} SJC Matrimony. Sacredly Committed to Lifelong Unions.
       </div>
     </footer>
   )

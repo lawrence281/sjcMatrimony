@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, LogOut, Sparkles, Sun, Moon, Users, PhoneCall } from 'lucide-react'
+import { LayoutDashboard, LogOut, Sparkles, Sun, Moon, Users, PhoneCall, CreditCard, BookOpen, Settings } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 
@@ -29,6 +29,20 @@ export default function Sidebar() {
         <NavLink to="/contact-requests">
           <PhoneCall size={17} />
           Contact Requests
+        </NavLink>
+        <NavLink to="/subscriptions">
+          <CreditCard size={17} />
+          Subscriptions
+        </NavLink>
+        <NavLink to="/marriage-register">
+          <BookOpen size={17} />
+          Marriage Register
+        </NavLink>
+
+        <div className="sidebar-section-label" style={{ marginTop: 12 }}>System</div>
+        <NavLink to="/settings">
+          <Settings size={17} />
+          Configuration
         </NavLink>
       </nav>
 

@@ -10,6 +10,9 @@ import { ThemeProvider } from './context/ThemeContext'
 import './index.css'
 
 import ContactRequests from './pages/ContactRequests'
+import Subscriptions from './pages/Subscriptions'
+import MarriageRegister from './pages/MarriageRegister'
+import ConfigManagement from './pages/ConfigManagement'
 
 function ProtectedLayout() {
   const { admin } = useAuth()
@@ -22,6 +25,9 @@ function ProtectedLayout() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/users" element={<Users />} />
           <Route path="/contact-requests" element={<ContactRequests />} />
+          <Route path="/subscriptions" element={<Subscriptions />} />
+          <Route path="/marriage-register" element={<MarriageRegister />} />
+          <Route path="/settings" element={<ConfigManagement />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>

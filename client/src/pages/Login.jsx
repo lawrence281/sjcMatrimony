@@ -25,7 +25,7 @@ export default function Login() {
         await login(email, password)
         toast.success(MESSAGES.AUTH.LOGIN_SUCCESS)
       }
-      navigate(from, { replace: true })
+      navigate('/', { replace: true })
     } catch (err) {
       toast.error(err.response?.data?.message || 'Authentication failed')
     }

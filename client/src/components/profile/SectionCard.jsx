@@ -6,19 +6,23 @@
  *    <SectionCard.Row label="First Name" value={profile.firstName} />
  *  </SectionCard>
  */
-import { Pencil, AlertCircle } from 'lucide-react'
+import { Pencil, AlertCircle, PlusCircle } from 'lucide-react'
 
-function SectionCard({ title, icon: Icon, children, onEdit, isEmpty = false }) {
+function SectionCard({ id, title, icon: Icon, children, onEdit, isEmpty = false }) {
   return (
-    <div className="section-card">
+    <div className="section-card" id={id}>
       <div className="section-card-header">
         <div className="section-card-title">
-          {Icon && <Icon size={18} className="section-icon" />}
-          <h3>{title}</h3>
+          {Icon && (
+            <div className="section-icon-badge">
+              <Icon size={18} className="section-icon" />
+            </div>
+          )}
+          <h3 className="section-title-text">{title}</h3>
         </div>
         {onEdit && (
           <button className="btn-edit-mini" onClick={onEdit}>
-            <Pencil size={14} />
+            <Pencil size={13} />
             Edit
           </button>
         )}
@@ -26,10 +30,11 @@ function SectionCard({ title, icon: Icon, children, onEdit, isEmpty = false }) {
 
       {isEmpty ? (
         <div className="section-empty">
-          <AlertCircle size={20} className="section-empty-icon" />
-          <p>No information added yet.</p>
+          <AlertCircle size={22} className="section-empty-icon" />
+          <p className="section-empty-text">No information added for this section yet.</p>
           {onEdit && (
             <button className="btn-add-info" onClick={onEdit}>
+              <PlusCircle size={14} />
               Add Information
             </button>
           )}
@@ -56,7 +61,9 @@ function BoolRow({ label, value }) {
   return (
     <div className="sc-row">
       <span className="sc-label">{label}</span>
-      <span className={`sc-bool ${value ? 'yes' : 'no'}`}>{value ? 'Yes' : 'No'}</span>
+      <span className={`sc-bool ${value ? 'yes' : 'no'}`}>
+        {value ? '✓ Yes' : '✕ No'}
+      </span>
     </div>
   )
 }

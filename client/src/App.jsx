@@ -15,7 +15,6 @@ import Profile from './pages/Profile'
 import EditProfile from './pages/EditProfile'
 import PartnerPreference from './pages/PartnerPreference'
 import Gallery from './pages/Gallery'
-import Documents from './pages/Documents'
 import SafetyRules from './pages/SafetyRules'
 import Contact from './pages/Contact'
 import PrivacyPolicy from './pages/PrivacyPolicy'
@@ -88,7 +87,6 @@ export default function App() {
               <Route path="/profile/edit" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
               <Route path="/profile/preferences" element={<ProtectedRoute><PartnerPreference /></ProtectedRoute>} />
               <Route path="/profile/gallery" element={<ProtectedRoute><Gallery /></ProtectedRoute>} />
-              <Route path="/profile/documents" element={<ProtectedRoute><Documents /></ProtectedRoute>} />
               <Route path="/my-contact-requests" element={<ProtectedRoute><ApprovedContactRequests /></ProtectedRoute>} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
