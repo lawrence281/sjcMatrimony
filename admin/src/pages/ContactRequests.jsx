@@ -177,11 +177,9 @@ export default function ContactRequests() {
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
           {[
             { label: 'All Requests', value: 'All' },
-            { label: 'Pending Member Review', value: 'Pending Member Review' },
-            { label: 'Pending Admin Verification', value: 'Pending Admin Verification' },
+            { label: 'Pending Admin Approval', value: 'Pending' },
             { label: 'Approved', value: 'Approved' },
-            { label: 'Rejected by Member', value: 'Rejected by Member' },
-            { label: 'Rejected by Admin', value: 'Rejected by Admin' },
+            { label: 'Rejected', value: 'Rejected' },
           ].map(filterObj => (
             <button
               key={filterObj.value}

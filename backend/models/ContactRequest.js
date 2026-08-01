@@ -20,15 +20,15 @@ const contactRequestSchema = new mongoose.Schema(
     status: {
       type: String,
       enum: [
+        'Pending',
+        'Approved',
+        'Rejected',
         'Pending Member Review',
         'Pending Admin Verification',
-        'Approved',
         'Rejected by Member',
         'Rejected by Admin',
-        'Pending',
-        'Rejected',
       ],
-      default: 'Pending Member Review',
+      default: 'Pending',
     },
     memberActionDate: {
       type: Date,

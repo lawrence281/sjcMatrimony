@@ -212,51 +212,11 @@ export default function BrowseMembers() {
         setRequestStatuses(prev => ({ ...prev, [memberId]: 'Pending' }))
         setMembers(prev => prev.map(m => m._id === memberId ? {
           ...m,
-          contactRequest: { status: 'Pending Member Review', direction: 'sent' }
+          contactRequest: { status: 'Pending', direction: 'sent' }
         } : m))
       }
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to submit contact request.')
-    } finally {
-      setConnectingId(null)
-    }
-  }
-
-  const handleAcceptContactRequest = async (e, member, requestId) => {
-    e.stopPropagation()
-    const memberId = member._id
-    setConnectingId(memberId)
-    try {
-      const res = await api.patch(`/contact-requests/incoming/${requestId}/accept`)
-      if (res.data && res.data.success) {
-        toast.success('Request accepted! Forwarded to Admin for verification.')
-        setMembers(prev => prev.map(m => m._id === memberId ? {
-          ...m,
-          contactRequest: { ...(m.contactRequest || {}), status: 'Pending Admin Verification', direction: 'incoming' }
-        } : m))
-      }
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to accept request.')
-    } finally {
-      setConnectingId(null)
-    }
-  }
-
-  const handleRejectContactRequest = async (e, member, requestId) => {
-    e.stopPropagation()
-    const memberId = member._id
-    setConnectingId(memberId)
-    try {
-      const res = await api.patch(`/contact-requests/incoming/${requestId}/reject`)
-      if (res.data && res.data.success) {
-        toast.success('Request rejected.')
-        setMembers(prev => prev.map(m => m._id === memberId ? {
-          ...m,
-          contactRequest: { ...(m.contactRequest || {}), status: 'Rejected by Member', direction: 'incoming' }
-        } : m))
-      }
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to reject request.')
     } finally {
       setConnectingId(null)
     }

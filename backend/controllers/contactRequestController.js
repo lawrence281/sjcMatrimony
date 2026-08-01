@@ -78,18 +78,10 @@ const sendContactRequest = async (req, res) => {
     });
 
     if (existingRequest) {
-      if (existingRequest.status === 'Pending Member Review' || existingRequest.status === 'Pending') {
+      if (existingRequest.status === 'Pending' || existingRequest.status === 'Pending Admin Verification' || existingRequest.status === 'Pending Member Review') {
         return res.status(BAD_REQUEST).json({
           success: false,
-          message: 'Awaiting member approval before forwarding to the Admin.',
-          request: existingRequest,
-        });
-      }
-
-      if (existingRequest.status === 'Pending Admin Verification') {
-        return res.status(BAD_REQUEST).json({
-          success: false,
-          message: 'Contact request is currently pending admin verification.',
+          message: 'Contact request is currently pending Admin approval.',
           request: existingRequest,
         });
       }
@@ -102,14 +94,7 @@ const sendContactRequest = async (req, res) => {
         });
       }
 
-      if (existingRequest.status === 'Rejected by Member') {
-        return res.status(FORBIDDEN).json({
-          success: false,
-          message: 'Request Rejected by Member',
-        });
-      }
-
-      if (existingRequest.status === 'Rejected by Admin' || existingRequest.status === 'Rejected') {
+      if (existingRequest.status === 'Rejected' || existingRequest.status === 'Rejected by Admin' || existingRequest.status === 'Rejected by Member') {
         return res.status(FORBIDDEN).json({
           success: false,
           message: 'Request Rejected by Admin',
@@ -117,17 +102,17 @@ const sendContactRequest = async (req, res) => {
       }
     }
 
-    // Create new ContactRequest with initial status 'Pending Member Review'
+    // Create new ContactRequest with initial status 'Pending' (Admin Approval)
     const newRequest = await ContactRequest.create({
       requestedBy: req.user._id,
       requestedProfile: targetProfile._id,
       receiverUser: targetProfile.userId,
-      status: 'Pending Member Review',
+      status: 'Pending',
     });
 
     return res.status(CREATED).json({
       success: true,
-      message: 'Contact request submitted successfully. Awaiting member approval.',
+      message: 'Contact request submitted successfully. Awaiting Admin approval.',
       request: newRequest,
     });
   } catch (error) {
@@ -697,13 +682,6 @@ const adminApproveRequest = async (req, res) => {
       });
     }
 
-    if (request.status === 'Pending Member Review') {
-      return res.status(BAD_REQUEST).json({
-        success: false,
-        message: 'Cannot approve request. Member (User B) has not accepted the interest request yet.',
-      });
-    }
-
     request.status = 'Approved';
     request.approvalDate = new Date();
     request.approvedBy = req.user._id;
@@ -743,7 +721,7 @@ const adminRejectRequest = async (req, res) => {
       });
     }
 
-    request.status = 'Rejected by Admin';
+    request.status = 'Rejected';
     request.approvedBy = req.user._id;
     request.adminRemarks = adminRemarks || 'Request rejected by administrative security team.';
 
